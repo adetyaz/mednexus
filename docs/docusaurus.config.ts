@@ -16,7 +16,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: "https://mednexus-docs.example.com",
+  url: "https://mednexus-docs.netlify.app", // Replace with your actual Netlify URL
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
@@ -45,8 +45,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/adetyaz/mednexus/tree/main/docs/",
+          editUrl: "https://github.com/adetyaz/mednexus/tree/main/docs/",
         },
         blog: {
           showReadingTime: true,
@@ -56,8 +55,7 @@ const config: Config = {
           },
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/adetyaz/mednexus/tree/main/docs/",
+          editUrl: "https://github.com/adetyaz/mednexus/tree/main/docs/",
           // Useful options to enforce blogging best practices
           onInlineTags: "warn",
           onInlineAuthors: "warn",

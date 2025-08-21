@@ -62,25 +62,6 @@ const sidebars: SidebarsConfig = {
       label: "Resources",
       items: ["overview/additional-links", "overview/inspiration"],
     },
-    {
-      type: "category",
-      label: "Getting Started",
-      items: [
-        "tutorial-basics/create-a-document",
-        "tutorial-basics/create-a-blog-post",
-        "tutorial-basics/markdown-features",
-        "tutorial-basics/deploy-your-site",
-        "tutorial-basics/congratulations",
-      ],
-    },
-    {
-      type: "category",
-      label: "Advanced Integration",
-      items: [
-        "tutorial-extras/manage-docs-versions",
-        "tutorial-extras/translate-your-site",
-      ],
-    },
   ],
 };
 

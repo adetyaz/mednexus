@@ -100,16 +100,16 @@ MedNexus is the first application to demonstrate comprehensive integration acros
 
 ### **Purpose-Built for AI Applications**
 
-- **11K+ TPS per shard**: High-performance processing for real-time medical AI analysis
-- **Modular Architecture**: Specialized components optimized for different medical use cases
+- **High-Performance Processing**: Optimized for real-time medical AI analysis and case matching
+- **Modular Architecture**: Specialized components designed for different medical use cases
 - **EVM Compatibility**: Seamless integration with existing blockchain medical applications
 - **AI-First Design**: Native support for medical intelligence and AI agent deployment
 
 ### **Scalable Global Infrastructure**
 
-- **650M+ Transactions**: Proven scalability for global healthcare network demands
-- **22M+ Active Accounts**: Demonstrated capability to support worldwide medical institution adoption
-- **8K+ Validators**: Robust, decentralized network ensuring medical data security and availability
+- **Proven Scalability**: Architecture designed to support global healthcare network demands
+- **Multi-Institution Support**: Capability to connect medical institutions worldwide
+- **Robust Validator Network**: Decentralized infrastructure ensuring medical data security and availability
 - **Global Node Distribution**: Worldwide infrastructure supporting international medical collaboration
 
 MedNexus leverages the complete 0G ecosystem to create the world's first comprehensive global medical intelligence network, demonstrating the real-world potential of decentralized AI infrastructure for critical healthcare applications.

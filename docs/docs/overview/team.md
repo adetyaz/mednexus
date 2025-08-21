@@ -29,6 +29,15 @@ MedNexus represents our commitment to showing the world that Web3 technology can
 
 We're not just building a platform - we're proving that blockchain technology can be a force for human progress, making complex global collaboration as simple as a single click.
 
+## Team Members
+
+### Developer
+
+**Adetayo Lasisi**
+
+- Lead Developer & Project Creator
+- Telegram: [@adetayofleur](https://t.me/adetayofleur)
+
 ---
 
 _More details about specific team members and contributors will be added as the project develops._

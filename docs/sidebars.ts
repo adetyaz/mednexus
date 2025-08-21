@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
       label: "Project Overview",
       items: [
         "overview/executive-summary",
+        "overview/inspiration",
         "overview/the-problem",
         "overview/the-solution",
         "overview/product-overview",
@@ -54,13 +55,12 @@ const sidebars: SidebarsConfig = {
         "overview/roadmap",
         "overview/innovation-impact",
         "overview/team",
-        "overview/features",
       ],
     },
     {
       type: "category",
       label: "Resources",
-      items: ["overview/additional-links", "overview/inspiration"],
+      items: ["overview/additional-links"],
     },
   ],
 };

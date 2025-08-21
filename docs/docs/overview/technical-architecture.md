@@ -4,6 +4,8 @@ sidebar_position: 1
 
 # Technical Architecture
 
+MedNexus is built on **0G Chain's complete infrastructure stack**, enabling seamless global medical collaboration with enterprise-grade security and privacy controls. The platform transforms isolated medical institutions into an interconnected global intelligence network where every patient benefits from worldwide medical expertise.
+
 ## System Overview
 
 ```
@@ -13,7 +15,9 @@ sidebar_position: 1
 │  Frontend: Medical Dashboards & Research Collaboration UI   │
 │  ├─ SvelteKit + Medical Flow Builder                       │
 │  ├─ Smart Account Integration (Non-crypto UX)              │
-│  └─ Real-time Global Case Matching Interface               │
+│  ├─ Real-time Global Case Matching Interface               │
+│  ├─ Expert Publications Platform                           │
+│  └─ Cross-Border Consultation Workflows                    │
 ├─────────────────────────────────────────────────────────────┤
 │                    0G Chain Integration                     │
 │  ├─ Storage: Global Medical Data Lake                      │
@@ -25,7 +29,8 @@ sidebar_position: 1
 │  ├─ MedicalCollaborationHub.sol                           │
 │  ├─ MedicalINFTRegistry.sol (ERC-7857)                     │
 │  ├─ CrossBorderConsent.sol                                │
-│  └─ ResearchCoordination.sol                              │
+│  ├─ ResearchCoordination.sol                              │
+│  └─ ExpertPublications.sol                                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -35,10 +40,10 @@ sidebar_position: 1
 
 **Tokenized medical expertise containing transferable knowledge assets:**
 
-- **Diagnostic Protocols**: AI models trained on specific conditions
-- **Treatment Algorithms**: Evidence-based decision trees
-- **Research Methodologies**: Proven protocols and trial designs
-- **Clinical Expertise**: Specialist knowledge from leading institutions
+- **Diagnostic Protocol INFTs**: AI models trained on specific medical conditions
+- **Treatment Algorithm INFTs**: Evidence-based decision trees with outcome tracking
+- **Research Methodology INFTs**: Proven clinical trial protocols for accelerated research
+- **Specialist Consultation INFTs**: Access to global medical expertise on-demand
 
 **ERC-7857 Advantages for Medical Applications:**
 
@@ -52,19 +57,40 @@ sidebar_position: 1
 
 **Encrypted, distributed storage of global medical knowledge:**
 
-- Patient records with granular access controls
-- Research datasets with anonymization layers
-- Medical imagery and diagnostic data
-- Clinical trial results and longitudinal studies
+- **Patient Records**: With granular access controls and client-side encryption
+- **Research Datasets**: Multi-institutional studies with anonymization layers
+- **Medical Imagery**: Diagnostic data with AI-enhanced pattern recognition
+- **Clinical Trial Results**: Longitudinal studies and treatment outcome tracking
+- **Expert Publications**: Global medical journal content and collaborative research
 
 ### ⚡ Medical AI Engine (0G Compute)
 
 **Distributed AI processing for medical intelligence:**
 
-- Global case pattern matching and similarity analysis
-- Rare disease detection across worldwide populations
-- Drug discovery acceleration through collaborative research
-- Diagnostic assistance and treatment recommendations
+- **Global Case Matching**: Pattern recognition across worldwide patient populations (under 30 seconds)
+- **Rare Disease Detection**: AI-powered discovery of similar cases across continents
+- **Drug Discovery Acceleration**: Collaborative pharmaceutical research through shared datasets
+- **Diagnostic Assistance**: Real-time treatment recommendations from global expertise
+- **Research Coordination**: Automated clinical trial participant matching and protocol optimization
+
+### 🌐 Institutional Coordination Hub (0G Chain)
+
+**Smart contracts managing global medical collaboration:**
+
+- **Cross-Border Medical Agreements**: Automated consent management and data sharing permissions
+- **Research Collaboration Frameworks**: Multi-institutional study coordination with ethics automation
+- **Medical Intelligence INFT Licensing**: Revenue distribution and usage rights management
+- **Institutional Verification**: Credentialing systems for hospital and doctor authentication
+- **Expert Publications**: Decentralized medical journal platform with peer review automation
+
+### 🔍 Medical Truth Layer (0G DA)
+
+**Immutable verification of medical cases and research integrity:**
+
+- **Case Authenticity Verification**: Cryptographic proofs for global database integrity
+- **Research Result Validation**: Reproducibility proofs and outcome tracking
+- **Treatment Outcome Analysis**: Longitudinal treatment effectiveness verification
+- **Cross-Institutional Audit Trails**: Complete compliance records for regulatory requirements
 
 ### 🌐 Institutional Coordination Hub (0G Chain)
 
@@ -249,3 +275,54 @@ contract MedicalINFTRegistry is ERC7857 {
 - **Audit Trail Transparency**: Complete immutable record of all data access and usage
 - **Cross-Border Legal Framework**: Automated compliance with international medical cooperation laws
 - **Medical Ethics Integration**: Built-in ethical review and oversight mechanisms
+
+## Expert Publications Integration
+
+### 🎓 Decentralized Medical Publishing
+
+The technical architecture includes dedicated support for the **Expert Publications** platform, enabling global medical knowledge sharing:
+
+```solidity
+// Expert Publications Smart Contract
+contract ExpertPublications {
+    struct Publication {
+        bytes32 contentHash;           // IPFS hash of encrypted publication
+        address[] authors;             // Contributing medical experts
+        string[] affiliations;         // Institutional affiliations
+        uint256 publicationDate;       // Publication timestamp
+        PublicationType pubType;       // Journal article, case study, etc.
+        PeerReviewStatus reviewStatus; // Peer review completion status
+        LicenseTerms license;          // Usage and attribution rights
+    }
+
+    enum PublicationType {
+        JOURNAL_ARTICLE,
+        CASE_STUDY,
+        RESEARCH_PROTOCOL,
+        MEDICAL_GUIDELINE,
+        COLLABORATIVE_REVIEW
+    }
+
+    function publishMedicalContent(
+        bytes32 contentHash,
+        address[] memory authors,
+        string[] memory affiliations,
+        PublicationType pubType,
+        LicenseTerms memory license
+    ) external onlyVerifiedMedicalExpert returns (uint256 publicationId) {
+        // Publish medical content with proper attribution
+        // Enable global access with licensing controls
+        // Integrate with Medical Intelligence INFT ecosystem
+    }
+}
+```
+
+### 🤝 Global Collaboration Features
+
+- **Multi-Institutional Authoring**: Seamless collaboration between medical experts worldwide
+- **Automated Peer Review**: AI-assisted peer review process with global expert matching
+- **Revenue Sharing**: Transparent distribution of publication income among contributors
+- **Citation Tracking**: Immutable record of research impact and attribution
+- **Language Translation**: AI-powered translation for global accessibility
+
+This Expert Publications platform integrates seamlessly with the Medical Intelligence INFT ecosystem, allowing published research to be tokenized and licensed for AI model training and diagnostic support.

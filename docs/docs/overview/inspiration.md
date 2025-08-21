@@ -8,7 +8,7 @@ sidebar_position: 6
 
 I'll be honest - the vision for MedNexus came to me during countless hours binge-watching House MD. You know those moments when you're supposed to be relaxing, but your mind keeps working? That was me, watching episode after episode, and suddenly realizing something profound about how medicine actually works.
 
-What really got to me were those episodes where House's team would be stumped by a case, and then someone would mention a similar patient from years ago, or a treatment tried in another country, and suddenly everything would click. Like that episode where they were dealing with a mysterious neurological condition, and Thirteen remembered a drug trial she'd participated in that had similar symptoms. Or when they'd dig through medical history and discover that what looked like a new disease was actually a variation of something doctors in rural Africa had been treating for decades.
+What really got to me were those episodes where House's team would be stumped by a case, and then someone would mention a similar patient from years ago, or a treatment tried in another country, and suddenly everything would click. Like that episode where they were dealing with a mysterious neurological condition, and Thirteen remembered a drug trial she'd participated in that had similar symptoms. Or when they'd dig through medical history and discover that what looked like a new disease was actually a variation of something doctors had comee across.
 
 ## The Pattern Recognition
 

@@ -53,6 +53,8 @@ const sidebars: SidebarsConfig = {
       label: "Development",
       items: [
         "overview/roadmap",
+        "overview/wave-2",
+        "overview/weekly",
         "overview/innovation-impact",
         "overview/team",
       ],

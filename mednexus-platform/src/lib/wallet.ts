@@ -47,7 +47,8 @@ const ogChain = {
 };
 
 // 1. Get projectId from https://cloud.reown.com
-const projectId = 'YOUR_PROJECT_ID'; // You'll need to replace this with your actual project ID
+// For development, using a test project ID - replace with your own for production
+const projectId = 'c6c9bacd35afa2e1b50e6b41e0b5b2f6'; // Test project ID
 
 // 2. Set up the Ethers adapter
 const ethersAdapter = new EthersAdapter();

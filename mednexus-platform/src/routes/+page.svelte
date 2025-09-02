@@ -1,344 +1,404 @@
 <script>
 	import WalletConnect from '$lib/components/WalletConnect.svelte';
-	import { onMount } from 'svelte';
-	import { enhancedOGStorageService } from '$lib/services/ogStorage';
-	import { medicalAuthorityService } from '$lib/services/medicalAuthority';
-
-	let storageReady = $state(false);
-	let authorityReady = $state(false);
-
-	onMount(async () => {
-		// Initialize core services
-		try {
-			await enhancedOGStorageService.init();
-			storageReady = true;
-		} catch (error) {
-			console.error('Storage init failed:', error);
-		}
-
-		try {
-			await medicalAuthorityService.initialize();
-			authorityReady = true;
-		} catch (error) {
-			console.error('Authority init failed:', error);
-		}
-	});
 </script>
 
+<nav class="main-nav">
+	<div class="nav-container">
+		<div class="nav-brand">
+			<a href="/">MedNexus</a>
+		</div>
+		<div class="nav-links">
+			<a href="/verification">Medical Verification</a>
+			<a href="/storage">Data Storage</a>
+			<a href="/collaboration">Collaboration Hub</a>
+			<a href="/monitoring">System Monitor</a>
+		</div>
+		<div class="nav-wallet">
+			<WalletConnect />
+		</div>
+	</div>
+</nav>
+
 <main>
-	<header class="header">
-		<h1>MedNexus Platform</h1>
-		<p>Global Medical Intelligence Ecosystem</p>
-		<p>Powered by 0G Chain Infrastructure</p>
+	<header class="hero">
+		<div class="hero-content">
+			<h1>Secure Medical Data Platform</h1>
+			<p class="tagline">Connecting medical institutions worldwide for better patient outcomes</p>
+			<p class="subtitle">HIPAA-compliant data sharing with blockchain verification</p>
+			<div class="hero-actions">
+				<a href="/verification" class="btn btn-primary">Get Verified</a>
+				<a href="/storage" class="btn btn-secondary">Upload Data</a>
+			</div>
+		</div>
 	</header>
-	
-	<WalletConnect />
-	
-	<section class="status-grid">
-		<div class="status-card">
-			<h3>0G Storage Service</h3>
-			<div class="status {storageReady ? 'ready' : 'loading'}">
-				{storageReady ? 'Ready' : 'Initializing...'}
+
+	<section class="features">
+		<div class="feature-grid">
+			<div class="feature">
+				<h3>🔐 Secure Data Storage</h3>
+				<p>
+					Upload medical records, imaging files, lab results, and clinical notes with end-to-end
+					encryption on blockchain infrastructure
+				</p>
+				<a href="/storage" class="feature-link">Access Storage →</a>
 			</div>
-			<p>Encrypted medical data storage with HIPAA compliance</p>
-		</div>
-
-		<div class="status-card">
-			<h3>Medical Authority Network</h3>
-			<div class="status {authorityReady ? 'ready' : 'loading'}">
-				{authorityReady ? 'Ready' : 'Initializing...'}
+			<div class="feature">
+				<h3>✅ Medical Verification</h3>
+				<p>
+					Verify medical institutions and healthcare providers with blockchain-based credentials and
+					licensing validation
+				</p>
+				<a href="/verification" class="feature-link">Get Verified →</a>
 			</div>
-			<p>Global medical licensing validation system</p>
-		</div>
-
-		<div class="status-card">
-			<h3>Smart Contracts</h3>
-			<div class="status ready">Ready</div>
-			<p>Medical verification and collaboration contracts deployed</p>
-		</div>
-
-		<div class="status-card">
-			<h3>Multi-Wallet Support</h3>
-			<div class="status ready">Ready</div>
-			<p>Reown AppKit integration with multiple wallet providers</p>
+			<div class="feature">
+				<h3>🤝 Global Collaboration</h3>
+				<p>
+					Connect with verified medical professionals worldwide for consultations, research, and
+					knowledge sharing
+				</p>
+				<a href="/collaboration" class="feature-link">Start Collaborating →</a>
+			</div>
 		</div>
 	</section>
 
-	<section class="platform-grid">
-		<a href="/verification" class="platform-card">
-			<h3>Medical Verification</h3>
-			<p>Verify medical institutions and credentials using blockchain technology</p>
-			<span class="link-indicator">Access Verification System</span>
-		</a>
-
-		<a href="/storage" class="platform-card">
-			<h3>Medical Data Storage</h3>
-			<p>Secure, encrypted storage for medical data with granular access controls</p>
-			<span class="link-indicator">Manage Medical Data</span>
-		</a>
-
-		<a href="/monitoring" class="platform-card">
-			<h3>System Monitoring</h3>
-			<p>Real-time monitoring of platform services and network status</p>
-			<span class="link-indicator">View System Status</span>
-		</a>
-
-		<a href="/test" class="platform-card">
-			<h3>Test Interface</h3>
-			<p>Testing interface for smart contract interactions and functionality</p>
-			<span class="link-indicator">Open Test Console</span>
-		</a>
-	</section>
-	
-	<section class="info-section">
-		<h2>Platform Overview</h2>
-		<p>
-			MedNexus creates the world's first seamless global medical intelligence ecosystem, 
-			enabling hospitals, research institutions, and medical professionals worldwide to 
-			collaborate securely while maintaining complete privacy and regulatory compliance.
-		</p>
-		
-		<div class="contract-info">
-			<h3>Deployed Contracts on 0G Chain Galileo Testnet</h3>
-			<div class="contract-list">
-				<div class="contract-item">
-					<span class="contract-name">Medical Collaboration Hub</span>
-					<span class="contract-address">0xdcEcd3Cf494069f9FB5614e05Efa4Fa45C4f949c</span>
-				</div>
-				<div class="contract-item">
-					<span class="contract-name">Medical Verification</span>
-					<span class="contract-address">0x2b83DDc5D0dd317D2A1e4adA44819b26CA54A652</span>
-				</div>
-				<div class="contract-item">
-					<span class="contract-name">Medical Intelligence INFT</span>
-					<span class="contract-address">0xe3259D46d5A4F900B5f9D1289CBf9791D9cc8b59</span>
-				</div>
-			</div>
-			<div class="network-info">
-				<p><strong>Network:</strong> 0G Chain Galileo Testnet</p>
-				<p><strong>Chain ID:</strong> 16601</p>
-				<p><strong>RPC:</strong> https://evmrpc-testnet.0g.ai</p>
-			</div>
+	<section class="platform-access">
+		<h2>How to Use MedNexus</h2>
+		<div class="access-grid">
+			<a href="/verification" class="access-card">
+				<div class="card-icon">🏥</div>
+				<h3>1. Get Institution Verified</h3>
+				<p><strong>Who:</strong> Hospitals, clinics, research facilities, medical practices</p>
+				<p>
+					<strong>What:</strong> Verify your institution's medical license and credentials to access
+					the platform
+				</p>
+				<p>
+					<strong>Why:</strong> Ensures only legitimate medical institutions can share sensitive patient
+					data
+				</p>
+			</a>
+			<a href="/storage" class="access-card">
+				<div class="card-icon">💾</div>
+				<h3>2. Store Medical Data</h3>
+				<p>
+					<strong>What you can upload:</strong> Patient records, X-rays, MRIs, lab results, clinical
+					notes, treatment plans
+				</p>
+				<p>
+					<strong>Security:</strong> HIPAA-compliant encryption, blockchain storage, access controls
+				</p>
+				<p>
+					<strong>Benefits:</strong> Secure backup, easy sharing with other verified institutions
+				</p>
+			</a>
+			<a href="/collaboration" class="access-card">
+				<div class="card-icon">🌐</div>
+				<h3>3. Collaborate Globally</h3>
+				<p>
+					<strong>Use cases:</strong> Second opinions, research collaboration, specialist consultations
+				</p>
+				<p><strong>Network:</strong> Connect with verified doctors and institutions worldwide</p>
+				<p><strong>Privacy:</strong> Patient consent-based sharing with audit trails</p>
+			</a>
+			<a href="/monitoring" class="access-card">
+				<div class="card-icon">📊</div>
+				<h3>4. Monitor System Health</h3>
+				<p><strong>For:</strong> IT administrators and compliance officers</p>
+				<p>
+					<strong>Track:</strong> Data uploads, access logs, security events, system performance
+				</p>
+				<p><strong>Compliance:</strong> HIPAA audit trails and regulatory reporting</p>
+			</a>
 		</div>
+	</section>
+
+	<section class="wallet-section">
+		<h2>Connect Your Wallet</h2>
+		<p>Connect your wallet to access the platform</p>
+		<WalletConnect />
 	</section>
 </main>
 
 <style>
-	main {
+	/* Navigation */
+	.main-nav {
+		background: white;
+		border-bottom: 1px solid #e5e7eb;
+		position: sticky;
+		top: 0;
+		z-index: 100;
+	}
+
+	.nav-container {
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: 20px;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		line-height: 1.6;
+		padding: 0 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 4rem;
 	}
 
-	.header {
-		text-align: center;
-		margin-bottom: 40px;
-		padding: 40px 0;
-		background: #f8f9fa;
-		border-radius: 8px;
-	}
-
-	.header h1 {
-		font-size: 2.5rem;
-		color: #2c3e50;
-		margin-bottom: 8px;
-		font-weight: 600;
-	}
-
-	.header p {
-		color: #6c757d;
-		margin: 4px 0;
-		font-size: 1.1rem;
-	}
-
-	.status-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 20px;
-		margin: 40px 0;
-	}
-
-	.status-card {
-		background: white;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
-		padding: 24px;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-	}
-
-	.status-card h3 {
-		color: #2c3e50;
-		margin-bottom: 12px;
-		font-size: 1.2rem;
-		font-weight: 600;
-	}
-
-	.status-card p {
-		color: #6c757d;
-		font-size: 0.9rem;
-		margin-top: 8px;
-	}
-
-	.status {
-		display: inline-block;
-		padding: 4px 12px;
-		border-radius: 16px;
-		font-size: 0.85rem;
-		font-weight: 500;
-		margin-bottom: 8px;
-	}
-
-	.status.ready {
-		background: #d4edda;
-		color: #155724;
-	}
-
-	.status.loading {
-		background: #fff3cd;
-		color: #856404;
-	}
-
-	.platform-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 24px;
-		margin: 40px 0;
-	}
-
-	.platform-card {
-		background: white;
-		border: 1px solid #e9ecef;
-		border-radius: 8px;
-		padding: 24px;
+	.nav-brand a {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #2563eb;
 		text-decoration: none;
-		color: inherit;
-		transition: all 0.2s ease;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 	}
 
-	.platform-card:hover {
-		border-color: #007bff;
-		box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+	.nav-links {
+		display: flex;
+		gap: 2rem;
+	}
+
+	.nav-links a {
+		color: #4b5563;
+		text-decoration: none;
+		font-weight: 500;
+		transition: color 0.2s;
+	}
+
+	.nav-links a:hover {
+		color: #2563eb;
+	}
+
+	.nav-wallet {
+		display: flex;
+		align-items: center;
+	}
+
+	/* Hero Section Buttons */
+	.hero-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
+		margin-top: 2rem;
+	}
+
+	.btn {
+		padding: 0.75rem 2rem;
+		border-radius: 0.5rem;
+		text-decoration: none;
+		font-weight: 600;
+		transition: all 0.2s;
+		display: inline-block;
+	}
+
+	.btn-primary {
+		background: white;
+		color: #2563eb;
+	}
+
+	.btn-primary:hover {
+		background: #f8fafc;
 		transform: translateY(-2px);
 	}
 
-	.platform-card h3 {
-		color: #2c3e50;
-		margin-bottom: 12px;
-		font-size: 1.3rem;
-		font-weight: 600;
+	.btn-secondary {
+		background: transparent;
+		color: white;
+		border: 2px solid white;
 	}
 
-	.platform-card p {
-		color: #6c757d;
-		margin-bottom: 16px;
-		line-height: 1.5;
-	}
-
-	.link-indicator {
-		color: #007bff;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.info-section {
-		background: #f8f9fa;
-		border-radius: 8px;
-		padding: 32px;
-		margin-top: 40px;
-	}
-
-	.info-section h2 {
-		color: #2c3e50;
-		margin-bottom: 16px;
-		font-size: 1.8rem;
-		font-weight: 600;
-	}
-
-	.info-section p {
-		color: #495057;
-		line-height: 1.6;
-		margin-bottom: 24px;
-	}
-
-	.contract-info {
+	.btn-secondary:hover {
 		background: white;
-		border: 1px solid #dee2e6;
-		border-radius: 6px;
-		padding: 24px;
+		color: #2563eb;
 	}
 
-	.contract-info h3 {
+	main {
+		min-height: 100vh;
+	}
+
+	.hero {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		text-align: center;
+		padding: 80px 20px;
+	}
+
+	.hero-content h1 {
+		font-size: 3.5rem;
+		font-weight: 700;
+		margin-bottom: 20px;
+		letter-spacing: -0.02em;
+	}
+
+	.tagline {
+		font-size: 1.4rem;
+		margin-bottom: 10px;
+		font-weight: 300;
+	}
+
+	.subtitle {
+		font-size: 1.1rem;
+		opacity: 0.9;
+		font-weight: 300;
+	}
+
+	.features {
+		padding: 80px 20px;
+		background: #f8f9fa;
+		text-align: center;
+	}
+
+	.feature-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 40px;
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.feature h3 {
 		color: #2c3e50;
-		margin-bottom: 16px;
-		font-size: 1.2rem;
+		font-size: 1.3rem;
+		margin-bottom: 15px;
 		font-weight: 600;
 	}
 
-	.contract-list {
-		margin-bottom: 20px;
+	.feature p {
+		color: #666;
+		line-height: 1.6;
+		font-size: 1rem;
+		margin-bottom: 15px;
 	}
 
-	.contract-item {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 12px 0;
-		border-bottom: 1px solid #f1f3f4;
-	}
-
-	.contract-item:last-child {
-		border-bottom: none;
-	}
-
-	.contract-name {
-		font-weight: 500;
-		color: #2c3e50;
-	}
-
-	.contract-address {
-		font-family: 'Courier New', monospace;
-		font-size: 0.85rem;
-		color: #6c757d;
-		background: #f8f9fa;
-		padding: 4px 8px;
-		border-radius: 4px;
-	}
-
-	.network-info {
-		padding-top: 16px;
-		border-top: 1px solid #f1f3f4;
-	}
-
-	.network-info p {
-		margin: 4px 0;
+	.feature-link {
+		color: #2563eb;
+		text-decoration: none;
+		font-weight: 600;
 		font-size: 0.9rem;
-		color: #6c757d;
+		transition: color 0.2s;
 	}
 
-	.network-info strong {
+	.feature-link:hover {
+		color: #1d4ed8;
+	}
+
+	.platform-access {
+		padding: 80px 20px;
+		max-width: 1200px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.platform-access h2 {
 		color: #2c3e50;
+		font-size: 2.5rem;
+		margin-bottom: 50px;
+		font-weight: 600;
+	}
+
+	.access-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 30px;
+	}
+
+	.access-card {
+		background: white;
+		border: 1px solid #e9ecef;
+		border-radius: 12px;
+		padding: 30px;
+		text-decoration: none;
+		color: inherit;
+		transition: all 0.3s ease;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+		text-align: left;
+	}
+
+	.access-card:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+		border-color: #667eea;
+	}
+
+	.card-icon {
+		font-size: 2.5rem;
+		margin-bottom: 15px;
+		display: block;
+	}
+
+	.access-card h3 {
+		color: #2c3e50;
+		font-size: 1.4rem;
+		margin-bottom: 15px;
+		font-weight: 600;
+	}
+
+	.access-card p {
+		color: #666;
+		line-height: 1.6;
+		margin-bottom: 10px;
+		font-size: 0.95rem;
+	}
+
+	.access-card p strong {
+		color: #2c3e50;
+		font-weight: 600;
+	}
+
+	.wallet-section {
+		background: #f8f9fa;
+		padding: 60px 20px;
+		text-align: center;
+	}
+
+	.wallet-section h2 {
+		color: #2c3e50;
+		font-size: 2rem;
+		margin-bottom: 15px;
+		font-weight: 600;
+	}
+
+	.wallet-section p {
+		color: #666;
+		margin-bottom: 30px;
+		font-size: 1.1rem;
 	}
 
 	@media (max-width: 768px) {
-		.header h1 {
-			font-size: 2rem;
-		}
-		
-		.platform-grid {
-			grid-template-columns: 1fr;
-		}
-		
-		.status-grid {
-			grid-template-columns: 1fr;
+		.nav-links {
+			display: none;
 		}
 
-		.contract-item {
+		.nav-container {
+			padding: 0 1rem;
+		}
+
+		.hero-content h1 {
+			font-size: 2.5rem;
+		}
+
+		.tagline {
+			font-size: 1.2rem;
+		}
+
+		.hero-actions {
 			flex-direction: column;
-			align-items: flex-start;
-			gap: 8px;
+			align-items: center;
+		}
+
+		.btn {
+			width: 200px;
+			text-align: center;
+		}
+
+		.features {
+			padding: 50px 20px;
+		}
+
+		.platform-access {
+			padding: 50px 20px;
+		}
+
+		.platform-access h2 {
+			font-size: 2rem;
+		}
+
+		.access-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

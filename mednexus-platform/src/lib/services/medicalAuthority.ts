@@ -5,7 +5,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { ethers } from 'ethers';
 import { NETWORK_CONFIG } from '$lib/config/config.js';
-import MedicalVerificationABI from '../../../ABIs/MedicalVerification.json';
+import MedicalVerificationABI from '$lib/ABIs/MedicalVerification.json';
 
 export interface MedicalAuthority {
 	id: string;

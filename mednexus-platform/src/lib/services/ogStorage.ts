@@ -2,6 +2,7 @@
 import { browser } from '$app/environment';
 import { ethers } from 'ethers';
 import { NETWORK_CONFIG } from '$lib/config/config.js';
+import { PUBLIC_OG_STORAGE_INDEXER, PUBLIC_OG_STORAGE_RPC } from '$env/static/public';
 
 export interface MedicalDataUpload {
 	id: string;
@@ -73,7 +74,7 @@ export class EnhancedOGStorageService {
 			console.log('Connected to 0G Storage network:', networkInfo.name);
 			
 			// Verify we can reach the 0G storage endpoints
-			const storageEndpoint = 'https://indexer-storage-testnet.0g.ai';
+			const storageEndpoint = PUBLIC_OG_STORAGE_INDEXER || 'https://indexer-storage-testnet.0g.ai';
 			const response = await fetch(`${storageEndpoint}/status`, { 
 				method: 'GET',
 				headers: { 'Accept': 'application/json' }
@@ -104,7 +105,7 @@ export class EnhancedOGStorageService {
 		return {
 			ready: this.isInitialized,
 			storageType: '0G Storage Network',
-			endpoint: 'https://rpc-storage-testnet.0g.ai',
+			endpoint: PUBLIC_OG_STORAGE_RPC || 'https://rpc-storage-testnet.0g.ai',
 			status: this.isInitialized ? 'connected' : 'disconnected'
 		};
 	}
@@ -148,7 +149,8 @@ export class EnhancedOGStorageService {
 			
 			// Use the indexer to upload the file data
 			// Note: This is a simplified version - in production you'd use proper file handling
-			const uploadResponse = await fetch('https://indexer-storage-testnet.0g.ai/upload', {
+			const storageIndexer = PUBLIC_OG_STORAGE_INDEXER || 'https://indexer-storage-testnet.0g.ai';
+			const uploadResponse = await fetch(`${storageIndexer}/upload`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/octet-stream',

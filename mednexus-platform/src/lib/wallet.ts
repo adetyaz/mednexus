@@ -5,6 +5,7 @@ import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { mainnet, arbitrum, polygon } from '@reown/appkit/networks';
 import { ethers } from 'ethers';
+import { PUBLIC_REOWN_PROJECT_ID, PUBLIC_OG_RPC_URL } from '$env/static/public';
 
 interface WalletState {
 	isConnected: boolean;
@@ -33,10 +34,10 @@ const ogChain = {
 	},
 	rpcUrls: {
 		default: {
-			http: ['https://evmrpc-testnet.0g.ai']
+			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai']
 		},
 		public: {
-			http: ['https://evmrpc-testnet.0g.ai']
+			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai']
 		}
 	},
 	blockExplorers: {
@@ -48,8 +49,8 @@ const ogChain = {
 };
 
 // 1. Get projectId from https://cloud.reown.com
-// For development, using a test project ID - replace with your own for production
-const projectId = 'c6c9bacd35afa2e1b50e6b41e0b5b2f6'; // Test project ID
+// Using SvelteKit environment variable syntax
+const projectId = PUBLIC_REOWN_PROJECT_ID;
 
 // 2. Set up the Ethers adapter
 const ethersAdapter = new EthersAdapter();
@@ -58,7 +59,7 @@ const ethersAdapter = new EthersAdapter();
 const metadata = {
 	name: 'MedNexus',
 	description: 'Medical collaboration platform on 0G Network',
-	url: 'https://mednexus.app', // origin must match your domain & subdomain
+	url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
 	icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 
@@ -67,15 +68,35 @@ let appkit: ReturnType<typeof createAppKit> | null = null;
 
 if (browser) {
 	try {
+		// Validate configuration before creating AppKit
+		if (!projectId) {
+			console.error('PUBLIC_REOWN_PROJECT_ID environment variable is required. Please add it to your .env file');
+			throw new Error('Missing required environment variable: PUBLIC_REOWN_PROJECT_ID');
+		}
+		
+		if (projectId.length < 10) {
+			console.error('Invalid Reown project ID. Please get a valid project ID from https://cloud.reown.com');
+			throw new Error('Invalid project ID configuration');
+		}
+
 		appkit = createAppKit({
 			adapters: [ethersAdapter],
 			projectId,
 			networks: [ogChain, mainnet, arbitrum, polygon],
 			metadata,
 			features: {
-				analytics: true // Optional - defaults to your Cloud configuration
+				analytics: false, // Disable analytics to avoid configuration issues
+				socials: [],
+				email: false,
+				onramp: false
+			},
+			themeMode: 'light',
+			themeVariables: {
+				'--w3m-z-index': 999999
 			}
 		});
+
+		console.log('AppKit initialized successfully with project ID:', projectId.substring(0, 8) + '...');
 
 		// Subscribe to account changes
 		appkit.subscribeAccount((account) => {

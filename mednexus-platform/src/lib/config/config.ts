@@ -22,11 +22,11 @@ export const NETWORK_CONFIG = {
 		entranceContract: '0xE75A073dA5bb7b0eC622170Fd268f35E675a957B'
 	},
 
-	// MedNexus contracts (to be deployed)
+	// MedNexus contracts (deployed on 0G testnet)
 	contracts: {
-		medicalVerification: '', // Will be set after deployment
-		medicalCollaborationHub: '', // Will be set after deployment
-		medicalIntelligenceINFT: '' // Will be set after deployment
+		medicalVerification: '0x2b83DDc5D0dd317D2A1e4adA44819b26CA54A652',
+		medicalCollaborationHub: '0xdcEcd3Cf494069f9FB5614e05Efa4Fa45C4f949c', 
+		medicalIntelligenceINFT: '0xe3259D46d5A4F900B5f9D1289CBf9791D9cc8b59'
 	},
 
 	// Deployment block

@@ -3,6 +3,9 @@
 
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { ethers } from 'ethers';
+import { NETWORK_CONFIG } from '$lib/config/config.js';
+import MedicalVerificationABI from '../../../ABIs/MedicalVerification.json';
 
 export interface MedicalAuthority {
 	id: string;
@@ -285,3 +288,76 @@ export function isCredentialExpiringSoon(credential: MedicalCredential, daysThre
 	thresholdDate.setDate(thresholdDate.getDate() + daysThreshold);
 	return expiryDate <= thresholdDate;
 }
+
+// Blockchain Medical Verification Service
+export class BlockchainMedicalVerificationService {
+	private provider: ethers.JsonRpcProvider;
+	private contract?: ethers.Contract;
+	private isInitialized = false;
+
+	constructor() {
+		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
+	}
+
+	async init(): Promise<void> {
+		try {
+			// Initialize contract connection
+			this.contract = new ethers.Contract(
+				NETWORK_CONFIG.contracts.medicalVerification,
+				MedicalVerificationABI as any,
+				this.provider
+			);
+
+			// Test connection
+			const networkInfo = await this.provider.getNetwork();
+			console.log('Connected to medical verification contract on:', networkInfo.name);
+			
+			this.isInitialized = true;
+		} catch (error) {
+			console.error('Failed to initialize blockchain verification service:', error);
+			throw error;
+		}
+	}
+
+	async verifyCredentialOnChain(credentialHash: string): Promise<boolean> {
+		if (!this.isInitialized || !this.contract) {
+			throw new Error('Blockchain verification service not initialized');
+		}
+
+		try {
+			// Call the smart contract to verify credential
+			const isVerified = await this.contract.isCredentialVerified(credentialHash);
+			console.log('Blockchain verification result:', isVerified);
+			return isVerified;
+		} catch (error) {
+			console.error('Blockchain verification failed:', error);
+			return false;
+		}
+	}
+
+	async getVerificationHistory(address: string): Promise<any[]> {
+		if (!this.isInitialized || !this.contract) {
+			throw new Error('Blockchain verification service not initialized');
+		}
+
+		try {
+			// Get verification events from blockchain
+			const filter = this.contract.filters.CredentialVerified(null, address);
+			const events = await this.contract.queryFilter(filter);
+			
+			return events.map((event: any) => ({
+				credentialHash: event.args?.[0],
+				verifier: event.args?.[1],
+				timestamp: event.args?.[2],
+				blockNumber: event.blockNumber,
+				transactionHash: event.transactionHash
+			}));
+		} catch (error) {
+			console.error('Failed to get verification history:', error);
+			return [];
+		}
+	}
+}
+
+// Global instance
+export const blockchainVerificationService = new BlockchainMedicalVerificationService();

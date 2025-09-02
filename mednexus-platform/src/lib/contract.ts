@@ -15,7 +15,7 @@ export class ContractManager {
 
 	async init(contractAddress: string): Promise<void> {
 		try {
-			const signer = walletManager.getSigner();
+			const signer = await walletManager.getSigner();
 			if (!signer) {
 				throw new Error('Wallet not connected');
 			}

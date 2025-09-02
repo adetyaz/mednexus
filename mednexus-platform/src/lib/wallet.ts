@@ -4,6 +4,7 @@ import { writable } from 'svelte/store';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 import { mainnet, arbitrum, polygon } from '@reown/appkit/networks';
+import { ethers } from 'ethers';
 
 interface WalletState {
 	isConnected: boolean;
@@ -178,6 +179,23 @@ class WalletManager {
 		} catch (error) {
 			console.error('Error getting balance:', error);
 			return '0';
+		}
+	}
+
+	async getSigner(): Promise<ethers.Signer | null> {
+		if (!browser || !appkit) return null;
+		
+		try {
+			const provider = appkit.getWalletProvider();
+			if (!provider) return null;
+			
+			// Create ethers provider from the wallet provider
+			const ethersProvider = new ethers.BrowserProvider(provider as any);
+			const signer = await ethersProvider.getSigner();
+			return signer;
+		} catch (error) {
+			console.error('Error getting signer:', error);
+			return null;
 		}
 	}
 }

@@ -1,0 +1,2185 @@
+[
+	{
+		"inputs": [],
+		"name": "AccessDenied",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "CaseNotFound",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ConsentExpired",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "EmergencyAccessDenied",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ExceedsMaxParticipants",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InsufficientStake",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidConsent",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidEnumValue",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotVerifiedDoctor",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotVerifiedInstitution",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "RegionRestricted",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "SessionNotActive",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "SpecialtyNotAllowed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "StakeNotWithdrawable",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroAddress",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "requestingInstitution",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "targetInstitution",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "urgencyLevel",
+				"type": "string"
+			}
+		],
+		"name": "CollaborationRequested",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "patientProxy",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "diagnosticSharing",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "treatmentSharing",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "researchParticipation",
+				"type": "bool"
+			}
+		],
+		"name": "ConsentUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "agreementId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "address[]",
+				"name": "institutions",
+				"type": "address[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "string[]",
+				"name": "countries",
+				"type": "string[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "agreementType",
+				"type": "string"
+			}
+		],
+		"name": "CrossBorderAgreement",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "doctor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "specialty",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "institution",
+				"type": "address"
+			}
+		],
+		"name": "DoctorRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "emergencyInstitution",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "authorizingDoctor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "EmergencyAccessGranted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "institution",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "country",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string[]",
+				"name": "specialties",
+				"type": "string[]"
+			}
+		],
+		"name": "InstitutionRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "patientProxy",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "institution",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "caseType",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "MedicalCaseRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "sessionId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "bytes32",
+				"name": "outcomeHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "duration",
+				"type": "uint256"
+			}
+		],
+		"name": "SessionCompleted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "sessionId",
+				"type": "bytes32"
+			},
+			{
+				"indexed": true,
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "address[]",
+				"name": "participants",
+				"type": "address[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "sessionType",
+				"type": "string"
+			}
+		],
+		"name": "SessionStarted",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "COMMIT_REVEAL_DELAY",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "DEFAULT_CASE_DURATION",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "DOCTOR_STAKE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "EMERGENCY_THRESHOLD",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "INSTITUTION_STAKE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MAX_ARRAY_SIZE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MAX_DAILY_REPUTATION",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MAX_PARTICIPANTS",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "activeCases",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "activeSessions",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "agreements",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "agreementId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint128",
+				"name": "agreementDate",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "expiryDate",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "string",
+				"name": "agreementType",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "termsHash",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "caseAccess",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "caseAllowedSpecialties",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "caseParticipants",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "caseRestrictedRegions",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "collaborationSessions",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "sessionId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint128",
+				"name": "sessionStart",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "sessionEnd",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "string",
+				"name": "sessionType",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "outcomeHash",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_commitHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "commitRegistration",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "commitTimestamps",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_sessionId",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_outcomeHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "completeSession",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "consentGiven",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "consentRevisions",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "_institutions",
+				"type": "address[]"
+			},
+			{
+				"internalType": "string[]",
+				"name": "_countries",
+				"type": "string[]"
+			},
+			{
+				"internalType": "string",
+				"name": "_agreementType",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_termsHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_duration",
+				"type": "uint256"
+			}
+		],
+		"name": "createMedicalAgreement",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "dailyReputationGained",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "doctorList",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "doctors",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "specialty",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "licenseNumber",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "doctorAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "institutionAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint128",
+				"name": "registrationDate",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "isVerified",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "consultationCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "reputationScore",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "emergencyAccessGranted",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getActiveCases",
+		"outputs": [
+			{
+				"internalType": "bytes32[]",
+				"name": "",
+				"type": "bytes32[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getActiveCasesLength",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getActiveSessions",
+		"outputs": [
+			{
+				"internalType": "bytes32[]",
+				"name": "",
+				"type": "bytes32[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getActiveSessionsLength",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "getCaseParticipants",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_sessionId",
+				"type": "bytes32"
+			}
+		],
+		"name": "getCollaborationSession",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "bytes32",
+						"name": "sessionId",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "caseHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "address[]",
+						"name": "participants",
+						"type": "address[]"
+					},
+					{
+						"internalType": "uint128",
+						"name": "sessionStart",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint128",
+						"name": "sessionEnd",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "isActive",
+						"type": "bool"
+					},
+					{
+						"internalType": "string",
+						"name": "sessionType",
+						"type": "string"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "outcomeHash",
+						"type": "bytes32"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.CollaborationSession",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_doctor",
+				"type": "address"
+			}
+		],
+		"name": "getDoctor",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "specialty",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "licenseNumber",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "doctorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "institutionAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "uint128",
+						"name": "registrationDate",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "isVerified",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "isActive",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "consultationCount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reputationScore",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalProfessional",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getDoctorListLength",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_institution",
+				"type": "address"
+			}
+		],
+		"name": "getInstitution",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "country",
+						"type": "string"
+					},
+					{
+						"internalType": "string[]",
+						"name": "specialties",
+						"type": "string[]"
+					},
+					{
+						"internalType": "address",
+						"name": "institutionAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "uint128",
+						"name": "registrationDate",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint128",
+						"name": "lastActivity",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "isVerified",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "isActive",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "collaborationCount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reputationScore",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalInstitution",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getInstitutionListLength",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "getMedicalCase",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "bytes32",
+						"name": "caseHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "address",
+						"name": "patientProxy",
+						"type": "address"
+					},
+					{
+						"internalType": "address[]",
+						"name": "authorizedInstitutions",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address[]",
+						"name": "consultingDoctors",
+						"type": "address[]"
+					},
+					{
+						"internalType": "uint128",
+						"name": "consentTimestamp",
+						"type": "uint128"
+					},
+					{
+						"internalType": "uint128",
+						"name": "caseExpiry",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bool",
+						"name": "isActive",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "researchParticipation",
+						"type": "bool"
+					},
+					{
+						"components": [
+							{
+								"internalType": "bool",
+								"name": "diagnosticSharing",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "treatmentSharing",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "researchParticipation",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "globalConsultation",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "emergencyAccess",
+								"type": "bool"
+							},
+							{
+								"internalType": "uint128",
+								"name": "consentExpiry",
+								"type": "uint128"
+							},
+							{
+								"internalType": "bytes32",
+								"name": "consentSignatureHash",
+								"type": "bytes32"
+							},
+							{
+								"internalType": "uint8",
+								"name": "restrictedRegionCount",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint8",
+								"name": "allowedSpecialtyCount",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct MedicalCollaborationHub.MedicalConsent",
+						"name": "patientConsent",
+						"type": "tuple"
+					},
+					{
+						"internalType": "string",
+						"name": "caseType",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "urgencyLevel",
+						"type": "string"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalCase",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_patient",
+				"type": "address"
+			}
+		],
+		"name": "getPatientCases",
+		"outputs": [
+			{
+				"internalType": "bytes32[]",
+				"name": "",
+				"type": "bytes32[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "_emergencyInstitution",
+				"type": "address"
+			}
+		],
+		"name": "grantEmergencyAccess",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "_institution",
+				"type": "address"
+			}
+		],
+		"name": "hasAccess",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "institutionList",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "institutionPartnership",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "institutions",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "country",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "institutionAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint128",
+				"name": "registrationDate",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "lastActivity",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "isVerified",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "collaborationCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "reputationScore",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_region",
+				"type": "bytes32"
+			}
+		],
+		"name": "isRegionRestricted",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_specialty",
+				"type": "bytes32"
+			}
+		],
+		"name": "isSpecialtyAllowed",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "medicalCases",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "patientProxy",
+				"type": "address"
+			},
+			{
+				"internalType": "uint128",
+				"name": "consentTimestamp",
+				"type": "uint128"
+			},
+			{
+				"internalType": "uint128",
+				"name": "caseExpiry",
+				"type": "uint128"
+			},
+			{
+				"internalType": "bool",
+				"name": "isActive",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "researchParticipation",
+				"type": "bool"
+			},
+			{
+				"components": [
+					{
+						"internalType": "bool",
+						"name": "diagnosticSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "treatmentSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "researchParticipation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "globalConsultation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "emergencyAccess",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint128",
+						"name": "consentExpiry",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "consentSignatureHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint8",
+						"name": "restrictedRegionCount",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "allowedSpecialtyCount",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalConsent",
+				"name": "patientConsent",
+				"type": "tuple"
+			},
+			{
+				"internalType": "string",
+				"name": "caseType",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "urgencyLevel",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "patientCases",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "pauseCase",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "reactivateCase",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_specialty",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_licenseNumber",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "_institutionAddress",
+				"type": "address"
+			}
+		],
+		"name": "registerDoctor",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "_patientProxy",
+				"type": "address"
+			},
+			{
+				"components": [
+					{
+						"internalType": "bool",
+						"name": "diagnosticSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "treatmentSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "researchParticipation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "globalConsultation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "emergencyAccess",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint128",
+						"name": "consentExpiry",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "consentSignatureHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint8",
+						"name": "restrictedRegionCount",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "allowedSpecialtyCount",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalConsent",
+				"name": "_consent",
+				"type": "tuple"
+			},
+			{
+				"internalType": "address[]",
+				"name": "_authorizedInstitutions",
+				"type": "address[]"
+			},
+			{
+				"internalType": "string",
+				"name": "_caseType",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_urgencyLevel",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32[]",
+				"name": "_restrictedRegions",
+				"type": "bytes32[]"
+			},
+			{
+				"internalType": "bytes32[]",
+				"name": "_allowedSpecialties",
+				"type": "bytes32[]"
+			}
+		],
+		"name": "registerGlobalCase",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_country",
+				"type": "string"
+			},
+			{
+				"internalType": "string[]",
+				"name": "_specialties",
+				"type": "string[]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_nonce",
+				"type": "uint256"
+			}
+		],
+		"name": "registerInstitution",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "registrationCommits",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "_targetInstitution",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "requestCollaboration",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "_emergencyInstitution",
+				"type": "address"
+			}
+		],
+		"name": "revokeExpiredEmergencyAccess",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32[]",
+				"name": "_restrictedRegions",
+				"type": "bytes32[]"
+			}
+		],
+		"name": "setRegionalRestrictions",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32[]",
+				"name": "_allowedSpecialties",
+				"type": "bytes32[]"
+			}
+		],
+		"name": "setSpecialtyRestrictions",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "stakedAmounts",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "stakingTimestamp",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address[]",
+				"name": "_participants",
+				"type": "address[]"
+			},
+			{
+				"internalType": "string",
+				"name": "_sessionType",
+				"type": "string"
+			}
+		],
+		"name": "startCollaborationSession",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_caseHash",
+				"type": "bytes32"
+			},
+			{
+				"components": [
+					{
+						"internalType": "bool",
+						"name": "diagnosticSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "treatmentSharing",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "researchParticipation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "globalConsultation",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "emergencyAccess",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint128",
+						"name": "consentExpiry",
+						"type": "uint128"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "consentSignatureHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint8",
+						"name": "restrictedRegionCount",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "allowedSpecialtyCount",
+						"type": "uint8"
+					}
+				],
+				"internalType": "struct MedicalCollaborationHub.MedicalConsent",
+				"name": "_newConsent",
+				"type": "tuple"
+			}
+		],
+		"name": "updateConsent",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "verifiedDoctors",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "verifiedInstitutions",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdrawStake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	}
+]

@@ -1,90 +1,95 @@
-<script>
-	import { onMount } from 'svelte';
-	import { 
-		walletConnected, 
-		userAddress, 
-		isOwner, 
-		networkCorrect,
-		isConnecting,
-		connectWallet, 
-		disconnectWallet, 
-		switchToZeroGChain,
-		getBalance,
-		initializeWallet
-	} from '../config/wallet.ts';
+<script lang="ts">
+	import { walletManager, formatAddress, formatBalance } from '$lib/wallet';
 
-	let balance = $state('0');
 	let showBalance = $state(false);
+	let walletState = $state({
+		isConnected: false,
+		address: null as string | null,
+		balance: '0',
+		chainId: null as number | null,
+		error: null as string | null,
+		isLoading: false
+	});
 
-	onMount(async () => {
-		// Initialize wallet on component mount
-		await initializeWallet();
+	// Subscribe to wallet store changes
+	$effect(() => {
+		const unsubscribe = walletManager.walletStore.subscribe((state) => {
+			walletState = { 
+				...state, 
+				error: walletState.error, 
+				isLoading: walletState.isLoading 
+			};
+		});
+		
+		return unsubscribe;
 	});
 
 	async function handleConnect() {
-		const result = await connectWallet();
-		if (result.success) {
-			console.log('Connected to wallet:', result.address);
-			await loadBalance();
-		} else {
-			console.error('Failed to connect:', result.error);
+		try {
+			walletState = { ...walletState, isLoading: true, error: null };
+			await walletManager.connect();
+			console.log('Connected to wallet');
+		} catch (error) {
+			console.error('Failed to connect:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			walletState = { ...walletState, error: errorMessage, isLoading: false };
 		}
 	}
 
 	async function handleDisconnect() {
-		const result = await disconnectWallet();
-		if (result.success) {
-			balance = '0';
+		try {
+			await walletManager.disconnect();
 			showBalance = false;
+			console.log('Wallet disconnected');
+		} catch (error) {
+			console.error('Failed to disconnect:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			walletState = { ...walletState, error: errorMessage };
 		}
 	}
 
 	async function handleNetworkSwitch() {
-		const result = await switchToZeroGChain();
-		if (!result.success) {
-			console.error('Failed to switch network:', result.error);
+		try {
+			await walletManager.switchToOGChain();
+		} catch (error) {
+			console.error('Failed to switch network:', error);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			walletState = { ...walletState, error: errorMessage };
 		}
 	}
 
-	async function loadBalance() {
-		if ($userAddress) {
-			const result = await getBalance($userAddress);
-			if (result.success) {
-				balance = result.formatted;
-				showBalance = true;
-			}
-		}
+	function toggleBalance() {
+		showBalance = !showBalance;
 	}
-
-	async function toggleBalance() {
-		if (showBalance) {
-			showBalance = false;
-		} else {
-			await loadBalance();
-		}
+	
+	function isOnCorrectNetwork(chainId: number | null): boolean {
+		return chainId === 16601; // 0G Galileo testnet
 	}
 </script>
 
 <div class="wallet-connect">
 	<h2>MedNexus Wallet</h2>
 	
-	{#if $walletConnected}
+	{#if walletState.isConnected}
 		<div class="connected-info">
-			<p><strong>Connected:</strong> {$userAddress.slice(0, 6)}...{$userAddress.slice(-4)}</p>
+			<p><strong>Connected:</strong> {formatAddress(walletState.address || '')}</p>
+			<p><strong>Wallet:</strong> MetaMask</p>
 			
-			{#if $isOwner}
-				<p class="owner-badge">🔑 Contract Owner</p>
-			{/if}
-			
-			{#if !$networkCorrect}
+			{#if !isOnCorrectNetwork(walletState.chainId)}
 				<div class="network-warning">
-					<p>⚠️ Wrong Network</p>
+					<p>⚠️ Wrong Network - Please switch to 0G Galileo Testnet</p>
 					<button onclick={handleNetworkSwitch} class="btn btn-warning">
 						Switch to 0G Chain
 					</button>
 				</div>
 			{:else}
-				<p class="network-ok">✅ Connected to 0G Chain</p>
+				<p class="network-ok">✅ Connected to 0G Galileo Testnet</p>
+			{/if}
+			
+			{#if walletState.error}
+				<div class="error-message">
+					<p>⚠️ {walletState.error}</p>
+				</div>
 			{/if}
 			
 			<div class="balance-section">
@@ -92,7 +97,7 @@
 					{showBalance ? 'Hide Balance' : 'Show Balance'}
 				</button>
 				{#if showBalance}
-					<p><strong>Balance:</strong> {balance} ETH</p>
+					<p><strong>Balance:</strong> {formatBalance(walletState.balance)}</p>
 				{/if}
 			</div>
 			
@@ -102,14 +107,20 @@
 		</div>
 	{:else}
 		<div class="connect-section">
-			<p>Connect your wallet to interact with MedNexus</p>
+			<p>Connect your wallet to interact with MedNexus on 0G Galileo Testnet</p>
 			<button 
 				onclick={handleConnect} 
-				disabled={$isConnecting}
+				disabled={walletState.isLoading}
 				class="btn btn-primary"
 			>
-				{$isConnecting ? 'Connecting...' : 'Connect MetaMask'}
+				{walletState.isLoading ? 'Connecting...' : 'Connect MetaMask'}
 			</button>
+			
+			{#if walletState.error}
+				<div class="error-message">
+					<p>❌ {walletState.error}</p>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -129,21 +140,27 @@
 		gap: 10px;
 	}
 
-	.owner-badge {
-		color: #d4af37;
-		font-weight: bold;
-	}
-
 	.network-warning {
 		padding: 10px;
 		background: #fff3cd;
 		border: 1px solid #ffeaa7;
 		border-radius: 4px;
+		margin: 10px 0;
 	}
 
 	.network-ok {
 		color: #28a745;
 		font-weight: bold;
+		margin: 10px 0;
+	}
+
+	.error-message {
+		padding: 10px;
+		background: #f8d7da;
+		border: 1px solid #f5c6cb;
+		border-radius: 4px;
+		margin: 10px 0;
+		color: #721c24;
 	}
 
 	.balance-section {

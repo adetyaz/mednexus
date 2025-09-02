@@ -1,31 +1,40 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { walletManager } from '$lib/wallet';
   import { storageHelper } from '$lib/storage';
   import { contractManager } from '$lib/contract';
   import type { ContractInfo } from '$lib/types';
 
-  let walletConnected = false;
-  let walletAddress = '';
-  let walletBalance = '';
-  let contractInfo: ContractInfo | null = null;
-  let storageInfo: any = null;
-  let isLoading = false;
+  let walletConnected = $state(false);
+  let walletAddress = $state('');
+  let walletBalance = $state('');
+  let contractInfo = $state<ContractInfo | null>(null);
+  let storageInfo = $state<any>(null);
+  let isLoading = $state(false);
 
-  onMount(async () => {
-    await storageHelper.init();
-    storageInfo = await storageHelper.getStorageInfo();
+  // Initialize storage when component mounts
+  $effect(() => {
+    (async () => {
+      await storageHelper.init();
+      storageInfo = await storageHelper.getStorageInfo();
+    })();
+  });
+
+  // Subscribe to wallet state changes
+  $effect(() => {
+    const unsubscribe = walletManager.walletStore.subscribe((state) => {
+      walletConnected = state.isConnected;
+      walletAddress = state.address || '';
+      walletBalance = state.balance || '0';
+    });
+    
+    return unsubscribe;
   });
 
   async function connectWallet() {
     isLoading = true;
     try {
-      const connected = await walletManager.connect();
-      if (connected) {
-        walletConnected = true;
-        walletAddress = (await walletManager.getAddress()) || '';
-        walletBalance = (await walletManager.getBalance()) || '0';
-      }
+      await walletManager.connect();
+      // The wallet state will be updated automatically via AppKit subscriptions
     } catch (error) {
       console.error('Wallet connection failed:', error);
     }
@@ -56,7 +65,7 @@
     
     {#if !walletConnected}
       <button 
-        on:click={connectWallet}
+        onclick={connectWallet}
         disabled={isLoading}
         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
       >
@@ -91,7 +100,7 @@
     
     {#if walletConnected}
       <button 
-        on:click={testContract}
+        onclick={testContract}
         disabled={isLoading}
         class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 mb-3"
       >
@@ -115,29 +124,40 @@
 
   <!-- Progress Section -->
   <div class="bg-gray-50 rounded-lg p-4">
-    <h2 class="text-xl font-semibold mb-3">Week 1 Progress</h2>
+    <h2 class="text-xl font-semibold mb-3">Wave 2 Progress</h2>
     
     <div class="space-y-2">
       <div class="flex items-center">
         <span class="text-green-600 mr-2">✅</span>
-        <span>Day 1: Project Setup Complete</span>
+        <span>Smart Contracts: All Core Contracts Deployed</span>
       </div>
       <div class="flex items-center">
-        <span class="text-gray-400 mr-2">⏳</span>
-        <span>Day 2: Foundation Smart Contracts</span>
+        <span class="text-green-600 mr-2">✅</span>
+        <span>Wallet Integration: Multi-wallet Support Active</span>
       </div>
       <div class="flex items-center">
-        <span class="text-gray-400 mr-2">⏳</span>
-        <span>Day 3: 0G Storage Integration</span>
+        <span class="text-green-600 mr-2">✅</span>
+        <span>0G Chain Integration: Galileo Testnet Connected</span>
       </div>
       <div class="flex items-center">
-        <span class="text-gray-400 mr-2">⏳</span>
-        <span>Day 4: Medical Intelligence INFTs</span>
+        <span class="text-green-600 mr-2">✅</span>
+        <span>Platform Monitoring: Real-time Analytics Dashboard</span>
       </div>
       <div class="flex items-center">
-        <span class="text-gray-400 mr-2">⏳</span>
-        <span>Day 5: Cross-Border Consent System</span>
+        <span class="text-orange-500 mr-2">🔄</span>
+        <span>Medical Authority Network: In Development</span>
       </div>
+      <div class="flex items-center">
+        <span class="text-orange-500 mr-2">🔄</span>
+        <span>INFT Marketplace: UI Implementation</span>
+      </div>
+    </div>
+    
+    <div class="mt-4 bg-blue-50 p-3 rounded-lg">
+      <p class="text-sm text-blue-800">
+        <strong>Wave 2 Status:</strong> Core infrastructure complete. 
+        Medical interfaces and 0G Storage integration in progress.
+      </p>
     </div>
   </div>
 </div>

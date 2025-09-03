@@ -1,48 +1,174 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { medicalAuthorityService, type MedicalAuthority } from '$lib/services/medicalAuthority';
+	import { walletStore } from '$lib/wallet';
 
 	let authorities = $state<MedicalAuthority[]>([]);
+	let credentialId = $state('');
+	let selectedAuthority = $state('');
+	let institution = $state('');
+	let holderName = $state('');
+	let verificationResult = $state<any>(null);
+	let isVerifying = $state(false);
+	let errorMessage = $state('');
 
-	onMount(async () => {
-		await medicalAuthorityService.initialize();
-		authorities = medicalAuthorityService.getActiveAuthorities();
+	$effect(() => {
+		(async () => {
+			await medicalAuthorityService.initialize();
+			authorities = medicalAuthorityService.getActiveAuthorities();
+		})();
 	});
+
+	async function verifyCredentials(event: SubmitEvent) {
+		event.preventDefault();
+		console.log('Verify credentials button clicked');
+
+		if (!credentialId || !selectedAuthority || !holderName) {
+			errorMessage = 'Please fill in all required fields';
+			console.log('Missing fields:', { credentialId, selectedAuthority, holderName });
+			return;
+		}
+
+		if (!$walletStore.isConnected) {
+			errorMessage = 'Please connect your wallet first';
+			console.log('Wallet not connected');
+			return;
+		}
+
+		console.log('Starting verification process...');
+		isVerifying = true;
+		errorMessage = '';
+		verificationResult = null;
+
+		try {
+			// Call the verification service
+			console.log('Calling verification with data:', {
+				licenseNumber: credentialId,
+				authorityId: selectedAuthority,
+				institution: institution || 'Unknown Institution',
+				holderName: holderName
+			});
+
+			const result = await medicalAuthorityService.verifyCredential({
+				licenseNumber: credentialId,
+				authorityId: selectedAuthority,
+				institution: institution || 'Unknown Institution',
+				holderName: holderName
+			});
+
+			console.log('Verification completed:', result);
+			verificationResult = result;
+		} catch (error) {
+			console.error('Verification failed:', error);
+			errorMessage = error instanceof Error ? error.message : 'Verification failed';
+		} finally {
+			console.log('Verification process completed');
+			isVerifying = false;
+		}
+	}
 </script>
 
 <main>
 	<div class="page-header">
-		<h1>Medical Verification</h1>
-		<p>Global medical licensing and credential validation system</p>
-		<a href="/" class="back-link">← Back to Home</a>
+		<h1>Medical Credential Verification</h1>
+		<p>Verify medical licenses and credentials on the blockchain</p>
+
+		{#if !$walletStore.isConnected}
+			<div class="wallet-warning">
+				<p>Connect your wallet to verify credentials</p>
+			</div>
+		{/if}
 	</div>
 
 	<div class="content-grid">
 		<div class="verification-form">
 			<h2>Verify Credentials</h2>
-			<form>
-				<div class="form-group">
-					<label for="credential-id">Credential ID</label>
-					<input type="text" id="credential-id" placeholder="Enter credential identifier" />
+
+			{#if errorMessage}
+				<div class="error-message">
+					{errorMessage}
 				</div>
-				
+			{/if}
+
+			<form onsubmit={verifyCredentials}>
 				<div class="form-group">
-					<label for="authority">Issuing Authority</label>
-					<select id="authority">
+					<label for="credential-id">Credential ID *</label>
+					<input
+						type="text"
+						id="credential-id"
+						bind:value={credentialId}
+						placeholder="Enter credential identifier"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="holder-name">License Holder Name *</label>
+					<input
+						type="text"
+						id="holder-name"
+						bind:value={holderName}
+						placeholder="Enter license holder's full name"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="authority">Issuing Authority *</label>
+					<select id="authority" bind:value={selectedAuthority} required>
 						<option value="">Select authority</option>
 						{#each authorities as authority}
 							<option value={authority.id}>{authority.name} ({authority.country})</option>
 						{/each}
 					</select>
 				</div>
-				
+
 				<div class="form-group">
 					<label for="institution">Institution</label>
-					<input type="text" id="institution" placeholder="Institution name" />
+					<input
+						type="text"
+						id="institution"
+						bind:value={institution}
+						placeholder="Institution name (optional)"
+					/>
 				</div>
-				
-				<button type="submit" class="verify-btn">Verify Credentials</button>
+
+				<button
+					type="submit"
+					class="verify-btn"
+					disabled={isVerifying || !$walletStore.isConnected}
+				>
+					{#if isVerifying}
+						Verifying...
+					{:else}
+						Verify Credentials
+					{/if}
+				</button>
 			</form>
+
+			{#if verificationResult}
+				<div class="verification-result">
+					<h3>Verification Result</h3>
+					{#if verificationResult.isValid}
+						<div class="result-success">
+							<p>Credentials verified successfully!</p>
+							<div class="result-details">
+								<p><strong>Authority:</strong> {verificationResult.authority}</p>
+								<p><strong>License Number:</strong> {verificationResult.licenseNumber}</p>
+								<p><strong>Status:</strong> {verificationResult.status}</p>
+								<p>
+									<strong>Verified On:</strong>
+									{new Date(verificationResult.verificationDate).toLocaleString()}
+								</p>
+							</div>
+						</div>
+					{:else}
+						<div class="result-error">
+							<p>Credential verification failed</p>
+							<p>{verificationResult.reason || 'Invalid or expired credentials'}</p>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
 		<div class="authorities-list">
@@ -87,16 +213,6 @@
 	.page-header p {
 		color: #666;
 		margin: 0 0 16px 0;
-	}
-
-	.back-link {
-		color: #666;
-		text-decoration: none;
-		font-size: 0.9rem;
-	}
-
-	.back-link:hover {
-		color: #333;
 	}
 
 	.content-grid {

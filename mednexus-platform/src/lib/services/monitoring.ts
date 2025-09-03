@@ -81,12 +81,12 @@ class MonitoringService {
 	async initializeMonitoring(): Promise<void> {
 		if (!browser) return;
 
-		console.log('🔍 Initializing MedNexus production monitoring...');
+		console.log('Initializing MedNexus production monitoring...');
 
 		// Start real-time metrics collection
 		this.startMetricsCollection();
 
-		console.log('✅ Production monitoring initialized successfully');
+		console.log('Production monitoring initialized successfully');
 	}
 
 	/**
@@ -99,7 +99,7 @@ class MonitoringService {
 				await this.updateUsageAnalytics();
 				await this.updateSecurityMetrics();
 			} catch (error) {
-				console.error('❌ Error updating metrics:', error);
+				console.error('Error updating metrics:', error);
 			}
 		}, 30000); // Update every 30 seconds
 	}
@@ -185,7 +185,7 @@ SECURITY STATUS:
 - Encryption Status: ${currentSecurityMetrics!.dataEncryptionStatus}
 - Compliance Score: ${currentSecurityMetrics!.complianceScore}%
 
-Status: All systems operational ✅
+Status: All systems operational
 		`.trim();
 	}
 
@@ -197,7 +197,7 @@ Status: All systems operational ✅
 			clearInterval(this.monitoringInterval);
 		}
 		
-		console.log('🔍 Monitoring service cleaned up');
+		console.log('Monitoring service cleaned up');
 	}
 }
 

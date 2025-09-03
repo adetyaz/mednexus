@@ -123,15 +123,15 @@ export class EnhancedOGStorageService {
 			retentionPeriod: number;
 			isAnonymized: boolean;
 		},
-	): Promise<string> {
+	): Promise<MedicalDataUpload> {
 		if (!this.isInitialized) {
 			throw new Error('0G Storage service not initialized');
 		}
 
 		try {
-			// Convert File to Buffer for 0G Storage
+			// Convert File to ArrayBuffer for browser compatibility
 			const fileBuffer = await file.arrayBuffer();
-			const buffer = Buffer.from(fileBuffer);
+			const uint8Array = new Uint8Array(fileBuffer);
 			
 			// Create temporary file path for ZgFile
 			const tempPath = `/tmp/${file.name}`;
@@ -140,7 +140,7 @@ export class EnhancedOGStorageService {
 			// Create a file-like object that works with 0G SDK
 			const fileData = {
 				path: tempPath,
-				data: buffer,
+				data: uint8Array,
 				size: file.size
 			};
 			
@@ -157,7 +157,7 @@ export class EnhancedOGStorageService {
 					'X-File-Name': file.name,
 					'X-File-Size': file.size.toString()
 				},
-				body: new Uint8Array(fileBuffer)
+				body: uint8Array
 			});
 			
 			if (!uploadResponse.ok) {
@@ -194,7 +194,7 @@ export class EnhancedOGStorageService {
 			this.saveUploads();
 			
 			console.log('Medical data uploaded to 0G Storage:', upload.id);
-			return upload.id;
+			return upload;
 			
 		} catch (error) {
 			console.error('Failed to upload to 0G Storage:', error);
@@ -223,7 +223,7 @@ export class EnhancedOGStorageService {
 			this.uploads.push(upload);
 			this.saveUploads();
 			
-			return upload.id;
+			return upload;
 		}
 	}
 

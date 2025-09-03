@@ -2,22 +2,6 @@
 	import WalletConnect from '$lib/components/WalletConnect.svelte';
 </script>
 
-<nav class="main-nav">
-	<div class="nav-container">
-		<div class="nav-brand">
-			<a href="/">MedNexus</a>
-		</div>
-		<div class="nav-links">
-			<a href="/verification">Verify</a>
-			<a href="/storage">Upload</a>
-			<a href="/monitoring">Status</a>
-		</div>
-		<div class="nav-wallet">
-			<WalletConnect />
-		</div>
-	</div>
-</nav>
-
 <main>
 	<header class="hero">
 		<div class="hero-content">
@@ -53,53 +37,6 @@
 </main>
 
 <style>
-	/* Navigation */
-	.main-nav {
-		background: white;
-		border-bottom: 1px solid #e5e7eb;
-		position: sticky;
-		top: 0;
-		z-index: 100;
-	}
-
-	.nav-container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 0 1rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		height: 4rem;
-	}
-
-	.nav-brand a {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #2563eb;
-		text-decoration: none;
-	}
-
-	.nav-links {
-		display: flex;
-		gap: 2rem;
-	}
-
-	.nav-links a {
-		color: #4b5563;
-		text-decoration: none;
-		font-weight: 500;
-		transition: color 0.2s;
-	}
-
-	.nav-links a:hover {
-		color: #2563eb;
-	}
-
-	.nav-wallet {
-		display: flex;
-		align-items: center;
-	}
-
 	/* Hero Section Buttons */
 	.hero-actions {
 		display: flex;
@@ -210,14 +147,6 @@
 	}
 
 	@media (max-width: 768px) {
-		.nav-links {
-			display: none;
-		}
-
-		.nav-container {
-			padding: 0 1rem;
-		}
-
 		.hero-content h1 {
 			font-size: 2.5rem;
 		}

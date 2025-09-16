@@ -22,6 +22,8 @@ export const walletStore = writable<WalletState>({
 	chainId: null
 });
 
+console.log('Wallet: Store initialized');
+
 // 0G Chain configuration
 const ogChain = {
 	id: 16601,
@@ -79,6 +81,8 @@ if (browser) {
 			throw new Error('Invalid project ID configuration');
 		}
 
+		console.log('Wallet: Initializing AppKit with project ID:', projectId);
+
 		appkit = createAppKit({
 			adapters: [ethersAdapter],
 			projectId,
@@ -100,6 +104,7 @@ if (browser) {
 
 		// Subscribe to account changes
 		appkit.subscribeAccount((account) => {
+			console.log('Wallet: Account changed:', account);
 			walletStore.update(state => ({
 				...state,
 				isConnected: account.isConnected || false,
@@ -109,6 +114,7 @@ if (browser) {
 
 		// Subscribe to network changes
 		appkit.subscribeNetwork((network) => {
+			console.log('Wallet: Network changed:', network);
 			const chainId = typeof network.chainId === 'string' 
 				? parseInt(network.chainId, 16) 
 				: network.chainId || null;

@@ -1,5 +1,8 @@
 node_modules
 
+# Development Discussion Logs
+DISCUSSION_LOG.md
+
 # Output
 .output
 .vercel

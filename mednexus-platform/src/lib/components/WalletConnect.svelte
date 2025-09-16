@@ -1,46 +1,43 @@
 <script lang="ts">
-	import { walletManager, formatAddress } from '$lib/wallet';
+	import { walletStore, walletManager, formatAddress } from '$lib/wallet';
 
-	let walletState = $state({
-		isConnected: false,
-		address: null as string | null,
-		isLoading: false
-	});
+	let isLoading = $state(false);
 
+	// Debug logging
 	$effect(() => {
-		const unsubscribe = walletManager.walletStore.subscribe((state) => {
-			walletState.isConnected = state.isConnected;
-			walletState.address = state.address;
-		});
-		return unsubscribe;
+		console.log('WalletConnect: walletStore state:', $walletStore);
 	});
 
 	async function connect() {
-		walletState.isLoading = true;
+		console.log('WalletConnect: Connect button clicked');
+		isLoading = true;
 		try {
 			await walletManager.connect();
+			console.log('WalletConnect: Connect successful');
 		} catch (error) {
-			console.error('Connect failed:', error);
+			console.error('WalletConnect: Connect failed:', error);
 		}
-		walletState.isLoading = false;
+		isLoading = false;
 	}
 
 	async function disconnect() {
+		console.log('WalletConnect: Disconnect button clicked');
 		try {
 			await walletManager.disconnect();
+			console.log('WalletConnect: Disconnect successful');
 		} catch (error) {
-			console.error('Disconnect failed:', error);
+			console.error('WalletConnect: Disconnect failed:', error);
 		}
 	}
 </script>
 
-{#if walletState.isConnected}
+{#if $walletStore.isConnected}
 	<button class="wallet-btn connected" onclick={disconnect}>
-		{formatAddress(walletState.address || '')}
+		{formatAddress($walletStore.address)}
 	</button>
 {:else}
-	<button class="wallet-btn" onclick={connect} disabled={walletState.isLoading}>
-		{walletState.isLoading ? 'Connecting...' : 'Connect'}
+	<button class="wallet-btn" onclick={connect} disabled={isLoading}>
+		{isLoading ? 'Connecting...' : 'Connect Wallet'}
 	</button>
 {/if}
 

@@ -64,7 +64,7 @@
 
 			<div class="mt-4 flex gap-4">
 				<button
-					on:click={generateReport}
+					onclick={generateReport}
 					class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					Generate Report

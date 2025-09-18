@@ -1,158 +1,66 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { accessControl } from '$lib/services/accessControl';
-	import type {
-		DoctorDashboardData,
-		DocumentSummary,
-		Task,
-		Consultation
-	} from '$lib/types/dashboard';
 	import { walletStore } from '$lib/wallet';
-	import StatsCard from '$lib/components/dashboard/StatsCard.svelte';
-	import DocumentList from '$lib/components/dashboard/DocumentList.svelte';
-	import TaskList from '$lib/components/dashboard/TaskList.svelte';
-	import ConsultationRequests from '$lib/components/dashboard/ConsultationRequests.svelte';
-	import ActivityFeed from '$lib/components/dashboard/ActivityFeed.svelte';
+	import { goto } from '$app/navigation';
+	import { medicalDocumentManager } from '$lib/services/medicalDocumentManagementService';
 
-	let dashboardData = $state<DoctorDashboardData | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let doctorContext = $state<any>(null);
 
-	let user = $derived(accessControl.getCurrentUser());
+	// Available features for doctors
+	const doctorFeatures = [
+		{
+			title: 'Medical Storage',
+			description: 'Upload, manage, and access your medical documents securely',
+			href: '/storage',
+			icon: '📁',
+			available: true
+		},
+		{
+			title: 'Document Verification',
+			description: 'Verify medical credentials and institutional documents',
+			href: '/verification',
+			icon: '✅',
+			available: true
+		},
+		{
+			title: 'Cross-Border Consultation',
+			description: 'Request consultations from specialists worldwide',
+			href: '/consultations',
+			icon: '🌍',
+			available: true
+		},
+		{
+			title: 'AI Pattern Recognition',
+			description: 'AI-powered analysis of medical cases and patterns',
+			href: '#ai-analysis',
+			icon: '🧠',
+			available: false
+		}
+	];
 
 	onMount(async () => {
-		try {
-			if (!$walletStore.isConnected || !$walletStore.address) {
-				throw new Error('Please connect your wallet to access the dashboard');
+		// Load doctor context if wallet is connected
+		if ($walletStore.isConnected && $walletStore.address) {
+			try {
+				const context = await medicalDocumentManager.getDoctorContext($walletStore.address);
+				if (context.success) {
+					doctorContext = context;
+				}
+			} catch (error) {
+				console.error('Failed to load doctor context:', error);
 			}
-
-			await accessControl.setCurrentUser($walletStore.address);
-			await loadDashboardData();
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load dashboard';
-			console.error('Dashboard error:', err);
-		} finally {
-			loading = false;
 		}
+
+		setTimeout(() => {
+			loading = false;
+		}, 500);
 	});
 
-	async function loadDashboardData(): Promise<void> {
-		try {
-			// In a real implementation, this would fetch data from blockchain/API
-			// For now, we'll generate mock data based on user role
-			const currentUser = accessControl.getCurrentUser();
-			if (!currentUser) throw new Error('User not authenticated');
-
-			dashboardData = await generateMockDashboardData(currentUser);
-		} catch (err) {
-			console.error('Failed to load dashboard data:', err);
-			throw err;
+	function navigateToFeature(feature: (typeof doctorFeatures)[0]) {
+		if (feature.available) {
+			goto(feature.href);
 		}
-	}
-
-	async function generateMockDashboardData(user: any): Promise<DoctorDashboardData> {
-		// Mock data generation - replace with actual API calls
-		const recentDocuments: DocumentSummary[] = [
-			{
-				id: 'doc_001',
-				name: 'Patient Record - John Doe',
-				type: 'Medical Record',
-				uploadDate: new Date(Date.now() - 86400000), // 1 day ago
-				status: 'active',
-				size: '2.3 MB'
-			},
-			{
-				id: 'doc_002',
-				name: 'Lab Results - Jane Smith',
-				type: 'Lab Report',
-				uploadDate: new Date(Date.now() - 172800000), // 2 days ago
-				status: 'shared',
-				size: '1.8 MB'
-			},
-			{
-				id: 'doc_003',
-				name: 'X-Ray Report - Bob Johnson',
-				type: 'Imaging',
-				uploadDate: new Date(Date.now() - 259200000), // 3 days ago
-				status: 'active',
-				size: '5.2 MB'
-			}
-		];
-
-		const pendingTasks: Task[] = [
-			{
-				id: 'task_001',
-				title: 'Review Lab Results',
-				description: 'Review and approve lab results for patient Jane Smith',
-				priority: 'high',
-				dueDate: new Date(Date.now() + 86400000), // Tomorrow
-				status: 'pending'
-			},
-			{
-				id: 'task_002',
-				title: 'Update Patient Notes',
-				description: 'Update treatment notes for patient John Doe',
-				priority: 'medium',
-				dueDate: new Date(Date.now() + 172800000), // 2 days
-				status: 'in-progress'
-			}
-		];
-
-		const consultations: Consultation[] = [
-			{
-				id: 'cons_001',
-				patientId: 'pat_001',
-				specialty: 'Cardiology',
-				status: 'requested',
-				requestedDate: new Date(Date.now() - 3600000), // 1 hour ago
-				doctorName: 'Dr. Sarah Wilson'
-			},
-			{
-				id: 'cons_002',
-				patientId: 'pat_002',
-				specialty: 'Neurology',
-				status: 'active',
-				requestedDate: new Date(Date.now() - 7200000), // 2 hours ago
-				doctorName: 'Dr. Michael Chen'
-			}
-		];
-
-		return {
-			user,
-			stats: {
-				totalDocuments: 45,
-				documentsThisMonth: 12,
-				sharedDocuments: 8,
-				pendingApprovals: 3,
-				storageUsed: '156 MB',
-				storageLimit: '1 GB'
-			},
-			recentDocuments,
-			pendingTasks,
-			consultations,
-			departmentActivity: [
-				{
-					id: 'act_001',
-					type: 'upload',
-					description: 'Uploaded patient record for John Doe',
-					timestamp: new Date(Date.now() - 3600000),
-					user: 'Dr. Emily Davis'
-				},
-				{
-					id: 'act_002',
-					type: 'share',
-					description: 'Shared lab results with cardiology department',
-					timestamp: new Date(Date.now() - 7200000),
-					user: 'Dr. Michael Chen'
-				}
-			]
-		};
-	}
-
-	function refreshDashboard(): void {
-		loading = true;
-		error = null;
-		loadDashboardData().finally(() => (loading = false));
 	}
 </script>
 
@@ -160,346 +68,280 @@
 	<title>Doctor Dashboard - MedNexus</title>
 </svelte:head>
 
-<div class="doctor-dashboard">
+<div class="min-h-screen bg-gray-50">
 	{#if loading}
-		<div class="loading-container">
-			<div class="loading-spinner"></div>
-			<p>Loading your dashboard...</p>
-		</div>
-	{:else if error}
-		<div class="error-container">
-			<div class="error-message">
-				<h3>Error Loading Dashboard</h3>
-				<p>{error}</p>
-				<button class="btn btn-primary" on:click={refreshDashboard}> Try Again </button>
+		<div class="flex items-center justify-center min-h-screen">
+			<div class="text-center">
+				<div
+					class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+				></div>
+				<p class="mt-4 text-gray-600">Loading your dashboard...</p>
 			</div>
 		</div>
-	{:else if dashboardData}
-		<!-- Header -->
-		<div class="dashboard-header">
-			<div class="header-content">
-				<h1>Welcome back, {dashboardData.user.profile.name}!</h1>
-				<p class="role-badge">{dashboardData.user.role.name}</p>
-				<p class="last-login">Last login: {dashboardData.user.lastLogin.toLocaleDateString()}</p>
-			</div>
-			<div class="header-actions">
-				<button class="btn btn-outline" on:click={refreshDashboard}>
-					<svg
-						width="16"
-						height="16"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-						<path d="M21 3v5h-5" />
-						<path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-						<path d="M8 16H3v5" />
+	{:else if !$walletStore.isConnected}
+		<div class="flex items-center justify-center min-h-screen">
+			<div class="text-center bg-white p-8 rounded-lg shadow-lg max-w-md mx-4">
+				<div
+					class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+				>
+					<svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+						></path>
 					</svg>
-					Refresh
-				</button>
-			</div>
-		</div>
-
-		<!-- Stats Overview -->
-		<div class="stats-grid">
-			<StatsCard
-				title="Total Documents"
-				value={dashboardData.stats.totalDocuments.toString()}
-				change="+12%"
-				changeType="positive"
-				icon="document"
-			/>
-			<StatsCard
-				title="This Month"
-				value={dashboardData.stats.documentsThisMonth.toString()}
-				change="+8%"
-				changeType="positive"
-				icon="upload"
-			/>
-			<StatsCard
-				title="Shared Documents"
-				value={dashboardData.stats.sharedDocuments.toString()}
-				change="+15%"
-				changeType="positive"
-				icon="share"
-			/>
-			<StatsCard
-				title="Pending Approvals"
-				value={dashboardData.stats.pendingApprovals.toString()}
-				change="2 urgent"
-				changeType="warning"
-				icon="clock"
-			/>
-		</div>
-
-		<!-- Main Content Grid -->
-		<div class="dashboard-grid">
-			<!-- Recent Documents -->
-			<div class="dashboard-section">
-				<div class="section-header">
-					<h2>Recent Documents</h2>
-					<a href="/storage" class="view-all-link">View All</a>
 				</div>
-				<DocumentList documents={dashboardData.recentDocuments} />
-			</div>
-
-			<!-- Pending Tasks -->
-			<div class="dashboard-section">
-				<div class="section-header">
-					<h2>Pending Tasks</h2>
-					<button class="btn btn-sm btn-outline">View All</button>
-				</div>
-				<TaskList tasks={dashboardData.pendingTasks} />
-			</div>
-
-			<!-- Consultation Requests -->
-			<div class="dashboard-section">
-				<div class="section-header">
-					<h2>Consultation Requests</h2>
-					<button class="btn btn-sm btn-outline">Manage</button>
-				</div>
-				<ConsultationRequests consultations={dashboardData.consultations} />
-			</div>
-
-			<!-- Department Activity -->
-			<div class="dashboard-section">
-				<div class="section-header">
-					<h2>Department Activity</h2>
-					<button class="btn btn-sm btn-outline">View Timeline</button>
-				</div>
-				<ActivityFeed activities={dashboardData.departmentActivity} />
+				<h3 class="text-xl font-semibold text-gray-900 mb-2">Wallet Connection Required</h3>
+				<p class="text-gray-600 mb-6">Please connect your wallet to access the doctor dashboard.</p>
+				<a
+					href="/"
+					class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+				>
+					Connect Wallet
+				</a>
 			</div>
 		</div>
 	{:else}
-		<div class="no-data">
-			<h3>No Dashboard Data Available</h3>
-			<p>Please ensure your wallet is connected and try refreshing the page.</p>
+		<!-- Main Dashboard Content -->
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<!-- Header -->
+			<div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+				<div class="flex items-center justify-between">
+					<div>
+						{#if doctorContext && doctorContext.doctor}
+							<h1 class="text-2xl font-bold text-gray-900">
+								Welcome, Dr. {doctorContext.doctor.name}
+							</h1>
+							<div class="flex items-center space-x-4 mt-2">
+								<div class="flex items-center space-x-2 text-sm text-gray-600">
+									<svg
+										class="w-4 h-4 text-blue-600"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-1-8h1m-1 4h1"
+										></path>
+									</svg>
+									<span class="font-medium">{doctorContext.doctor.department}</span>
+								</div>
+								<div class="flex items-center space-x-2 text-sm text-gray-600">
+									<svg
+										class="w-4 h-4 text-green-600"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-1-8h1m-1 4h1"
+										></path>
+									</svg>
+									<span>{doctorContext.doctor.specialty}</span>
+								</div>
+								{#if doctorContext.doctor.verificationStatus === 'verified'}
+									<span
+										class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+									>
+										<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M5 13l4 4L19 7"
+											></path>
+										</svg>
+										Verified Doctor
+									</span>
+								{/if}
+							</div>
+							{#if doctorContext.institution}
+								<p class="text-gray-600 mt-1 text-sm">
+									<svg
+										class="w-4 h-4 inline mr-1"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-1-8h1m-1 4h1"
+										></path>
+									</svg>
+									{doctorContext.institution.name}
+								</p>
+							{/if}
+						{:else}
+							<h1 class="text-2xl font-bold text-gray-900">Doctor Dashboard</h1>
+							<p class="text-gray-600 mt-1">Access your medical tools and features</p>
+						{/if}
+					</div>
+					<div
+						class="flex items-center space-x-2 bg-green-50 border border-green-200 px-3 py-2 rounded-lg"
+					>
+						<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+						<span class="text-sm font-medium text-green-700">Connected</span>
+						<span class="text-sm font-mono text-green-600">
+							{$walletStore.address?.slice(0, 6)}...{$walletStore.address?.slice(-4)}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Verification Status Section -->
+			{#if !doctorContext || !doctorContext.doctor}
+				<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+					<div class="flex items-start">
+						<div class="flex-shrink-0">
+							<svg
+								class="w-6 h-6 text-yellow-600"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.19 2.5 1.732 2.5z"
+								></path>
+							</svg>
+						</div>
+						<div class="ml-3 flex-1">
+							<h3 class="text-sm font-medium text-yellow-800">Doctor Verification Required</h3>
+							<div class="mt-2 text-sm text-yellow-700">
+								<p>
+									To access full functionality and have your name displayed, please complete doctor
+									verification and institutional registration.
+								</p>
+							</div>
+							<div class="mt-4">
+								<a
+									href="/register"
+									class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 transition-colors duration-200"
+								>
+									Complete Verification
+									<svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M9 5l7 7-7 7"
+										></path>
+									</svg>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Features Grid -->
+			<div class="mb-8">
+				<div class="flex items-center justify-between mb-6">
+					<h2 class="text-lg font-semibold text-gray-900">Available Features</h2>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+					{#each doctorFeatures as feature}
+						<div
+							class="bg-white rounded-lg shadow-sm border transition-all duration-200 {feature.available
+								? 'hover:shadow-md hover:border-blue-300 cursor-pointer'
+								: 'opacity-75'}"
+							class:cursor-pointer={feature.available}
+							onclick={() => navigateToFeature(feature)}
+							role={feature.available ? 'button' : ''}
+						>
+							<div class="p-6">
+								<div class="flex items-center justify-between mb-4">
+									<div class="text-3xl">{feature.icon}</div>
+									{#if feature.available}
+										<span
+											class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+										>
+											Available
+										</span>
+									{:else}
+										<span
+											class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+										>
+											Coming Soon
+										</span>
+									{/if}
+								</div>
+
+								<h3 class="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+								<p class="text-gray-600 text-sm mb-4">{feature.description}</p>
+
+								{#if feature.available}
+									<div class="flex items-center text-blue-600 text-sm font-medium">
+										<span>Access Feature</span>
+										<svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M9 5l7 7-7 7"
+											></path>
+										</svg>
+									</div>
+								{:else}
+									<div class="text-gray-400 text-sm font-medium">Coming Soon</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="bg-white rounded-lg shadow-sm p-6">
+				<h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+					<a
+						href="/storage"
+						class="flex items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+					>
+						<div class="text-2xl mr-4">📁</div>
+						<div>
+							<div class="font-medium text-gray-900">Upload Documents</div>
+							<div class="text-sm text-gray-600">Store medical files securely</div>
+						</div>
+					</a>
+
+					<a
+						href="/verification"
+						class="flex items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+					>
+						<div class="text-2xl mr-4">✅</div>
+						<div>
+							<div class="font-medium text-gray-900">Verify Credentials</div>
+							<div class="text-sm text-gray-600">Validate medical documents</div>
+						</div>
+					</a>
+
+					<button
+						class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200 cursor-not-allowed opacity-60"
+						disabled
+					>
+						<div class="text-2xl mr-4">🌍</div>
+						<div>
+							<div class="font-medium text-gray-900">Global Consultation</div>
+							<div class="text-sm text-gray-600">Coming Soon</div>
+						</div>
+					</button>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>
-
-<style>
-	.doctor-dashboard {
-		padding: 2rem;
-		max-width: 1400px;
-		margin: 0 auto;
-		background: #f8fafc;
-		min-height: 100vh;
-	}
-
-	.loading-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 60vh;
-		gap: 1rem;
-	}
-
-	.loading-spinner {
-		width: 40px;
-		height: 40px;
-		border: 4px solid #e2e8f0;
-		border-top: 4px solid #3b82f6;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-
-	.error-container {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		height: 60vh;
-	}
-
-	.error-message {
-		background: white;
-		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-		text-align: center;
-		max-width: 400px;
-	}
-
-	.dashboard-header {
-		background: white;
-		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		margin-bottom: 2rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.header-content h1 {
-		margin: 0 0 0.5rem 0;
-		font-size: 2rem;
-		font-weight: 700;
-		color: #1f2937;
-	}
-
-	.role-badge {
-		background: #dbeafe;
-		color: #1d4ed8;
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		display: inline-block;
-		margin-bottom: 0.5rem;
-	}
-
-	.last-login {
-		color: #6b7280;
-		font-size: 0.875rem;
-		margin: 0;
-	}
-
-	.header-actions .btn {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.dashboard-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
-	}
-
-	.dashboard-section {
-		background: white;
-		border-radius: 12px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		overflow: hidden;
-	}
-
-	.section-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid #e5e7eb;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.section-header h2 {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #1f2937;
-	}
-
-	.view-all-link {
-		color: #3b82f6;
-		text-decoration: none;
-		font-size: 0.875rem;
-		font-weight: 500;
-	}
-
-	.view-all-link:hover {
-		text-decoration: underline;
-	}
-
-	.btn {
-		padding: 0.5rem 1rem;
-		border-radius: 8px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s;
-		border: none;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.btn-primary {
-		background: #3b82f6;
-		color: white;
-	}
-
-	.btn-primary:hover {
-		background: #2563eb;
-	}
-
-	.btn-outline {
-		background: white;
-		color: #374151;
-		border: 1px solid #d1d5db;
-	}
-
-	.btn-outline:hover {
-		background: #f9fafb;
-		border-color: #9ca3af;
-	}
-
-	.btn-sm {
-		padding: 0.375rem 0.75rem;
-		font-size: 0.875rem;
-	}
-
-	.no-data {
-		text-align: center;
-		padding: 4rem 2rem;
-		background: white;
-		border-radius: 12px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-	}
-
-	.no-data h3 {
-		color: #1f2937;
-		margin-bottom: 0.5rem;
-	}
-
-	.no-data p {
-		color: #6b7280;
-	}
-
-	@media (max-width: 1024px) {
-		.dashboard-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.dashboard-header {
-			flex-direction: column;
-			gap: 1rem;
-			text-align: center;
-		}
-	}
-
-	@media (max-width: 768px) {
-		.doctor-dashboard {
-			padding: 1rem;
-		}
-
-		.stats-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.dashboard-header {
-			padding: 1.5rem;
-		}
-
-		.header-content h1 {
-			font-size: 1.5rem;
-		}
-	}
-</style>

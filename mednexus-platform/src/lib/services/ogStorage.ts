@@ -4,6 +4,9 @@ import { ethers } from 'ethers';
 import { NETWORK_CONFIG } from '$lib/config/config';
 import { PUBLIC_OG_STORAGE_INDEXER, PUBLIC_OG_STORAGE_RPC } from '$env/static/public';
 
+// Import 0G SDK with browser suffix for Vite
+import { Indexer, Blob } from '@0glabs/0g-ts-sdk/browser';
+
 export interface MedicalDataUpload {
 	id: string;
 	patientId: string;
@@ -46,24 +49,27 @@ export class EnhancedOGStorageService {
 	private isInitialized = false;
 	private uploads: MedicalDataUpload[] = [];
 	private provider: ethers.JsonRpcProvider;
+	private indexer: Indexer | null = null;
 
 	constructor() {
 		// Initialize provider for 0G network
 		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
+		this.init();
 	}
 
 	async init(): Promise<void> {
 		if (!browser) return;
 		
 		try {
-			// Initialize real 0G Storage SDK components
-			await this.connectToOGNetwork();
-			await this.loadExistingUploads();
+			// Initialize 0G Indexer as per official docs
+			const indRpc = PUBLIC_OG_STORAGE_INDEXER || 'https://indexer-storage-testnet-turbo.0g.ai';
+			this.indexer = new Indexer(indRpc);
+			
+			console.log('✅ 0G Storage Service initialized with Indexer:', indRpc);
 			this.isInitialized = true;
-			console.log('Enhanced 0G Storage Service initialized with real 0G SDK');
 		} catch (error) {
-			console.error('Failed to initialize 0G Storage:', error);
-			throw error;
+			console.error('❌ Failed to initialize 0G Storage:', error);
+			// Don't throw error, allow fallback mode
 		}
 	}
 

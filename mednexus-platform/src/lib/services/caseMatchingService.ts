@@ -7,6 +7,7 @@ import { NETWORK_CONFIG } from '$lib/config/config';
 import { ethers } from 'ethers';
 import { browser } from '$app/environment';
 import { enhancedOGStorageService } from '$lib/services/ogStorage';
+import { medicalTranslationService } from '$lib/services/medicalTranslationService';
 
 // 0G SDK integration for compute and storage
 import { Indexer, ZgFile } from '@0glabs/0g-ts-sdk';
@@ -48,6 +49,24 @@ export interface MedicalCase {
 	consentHash?: string;
 	createdAt: Date;
 	updatedAt: Date;
+	// Multi-language support
+	language?: string; // ISO 639-1 language code
+	translations?: Map<string, MedicalCaseTranslation>; // Language -> translated content
+	requiresTranslation?: boolean;
+}
+
+export interface MedicalCaseTranslation {
+	language: string;
+	chiefComplaint: string;
+	symptoms: string[];
+	medicalHistory: string[];
+	currentMedications: string[];
+	allergies: string[];
+	diagnosis?: string;
+	treatment?: string[];
+	translatedAt: Date;
+	confidence: number;
+	reviewStatus: 'pending' | 'verified' | 'corrected';
 }
 
 export interface MedicalCaseManifest {
@@ -541,6 +560,257 @@ class ZeroGCaseMatchingService {
 		};
 		
 		poll();
+	}
+
+	/**
+	 * Translate medical case for cross-border sharing
+	 */
+	async translateMedicalCase(medicalCase: MedicalCase, targetLanguage: string): Promise<MedicalCase> {
+		if (!medicalCase.language) {
+			medicalCase.language = 'en'; // Default to English
+		}
+
+		const sourceLanguage = medicalCase.language;
+
+		// Check if translation already exists
+		if (medicalCase.translations?.has(targetLanguage)) {
+			console.log(`Translation to ${targetLanguage} already exists`);
+			return this.applyTranslation(medicalCase, targetLanguage);
+		}
+
+		console.log(`Translating medical case from ${medicalCase.language} to ${targetLanguage}...`);
+
+		try {
+			// Translate chief complaint
+			const chiefComplaintTranslation = await medicalTranslationService.translateMedicalText({
+				text: medicalCase.chiefComplaint,
+				sourceLanguage: sourceLanguage,
+				targetLanguage,
+				medicalContext: 'symptoms',
+				urgency: medicalCase.urgency,
+				caseId: medicalCase.id
+			});
+
+			// Translate symptoms
+			const symptomTranslations = await Promise.all(
+				medicalCase.symptoms.map(symptom => 
+					medicalTranslationService.translateMedicalText({
+						text: symptom,
+						sourceLanguage: sourceLanguage,
+						targetLanguage,
+						medicalContext: 'symptoms',
+						urgency: medicalCase.urgency,
+						caseId: medicalCase.id
+					})
+				)
+			);
+
+			// Translate medical history
+			const historyTranslations = await Promise.all(
+				medicalCase.medicalHistory.map(history =>
+					medicalTranslationService.translateMedicalText({
+						text: history,
+						sourceLanguage: sourceLanguage,
+						targetLanguage,
+						medicalContext: 'diagnosis',
+						urgency: medicalCase.urgency,
+						caseId: medicalCase.id
+					})
+				)
+			);
+
+			// Translate medications
+			const medicationTranslations = await Promise.all(
+				medicalCase.currentMedications.map(medication =>
+					medicalTranslationService.translateMedicalText({
+						text: medication,
+						sourceLanguage: sourceLanguage,
+						targetLanguage,
+						medicalContext: 'medication',
+						urgency: medicalCase.urgency,
+						caseId: medicalCase.id
+					})
+				)
+			);
+
+			// Translate allergies
+			const allergyTranslations = await Promise.all(
+				medicalCase.allergies.map(allergy =>
+					medicalTranslationService.translateMedicalText({
+						text: allergy,
+						sourceLanguage: sourceLanguage,
+						targetLanguage,
+						medicalContext: 'general',
+						urgency: medicalCase.urgency,
+						caseId: medicalCase.id
+					})
+				)
+			);
+
+			// Create translation object
+			const caseTranslation: MedicalCaseTranslation = {
+				language: targetLanguage,
+				chiefComplaint: chiefComplaintTranslation.translatedText,
+				symptoms: symptomTranslations.map(t => t.translatedText),
+				medicalHistory: historyTranslations.map(t => t.translatedText),
+				currentMedications: medicationTranslations.map(t => t.translatedText),
+				allergies: allergyTranslations.map(t => t.translatedText),
+				diagnosis: medicalCase.diagnosis ? await this.translateField(
+					medicalCase.diagnosis, sourceLanguage, targetLanguage, 'diagnosis', medicalCase
+				) : undefined,
+				treatment: medicalCase.treatment ? await Promise.all(
+					medicalCase.treatment.map(treatment =>
+						this.translateField(treatment, sourceLanguage, targetLanguage, 'treatment', medicalCase)
+					)
+				) : undefined,
+				translatedAt: new Date(),
+				confidence: this.calculateAverageConfidence([
+					chiefComplaintTranslation,
+					...symptomTranslations,
+					...historyTranslations,
+					...medicationTranslations,
+					...allergyTranslations
+				]),
+				reviewStatus: 'pending'
+			};
+
+			// Store translation
+			if (!medicalCase.translations) {
+				medicalCase.translations = new Map();
+			}
+			medicalCase.translations.set(targetLanguage, caseTranslation);
+
+			console.log(`Medical case translated to ${targetLanguage} with ${caseTranslation.confidence}% confidence`);
+
+			// Return case with applied translation
+			return this.applyTranslation(medicalCase, targetLanguage);
+
+		} catch (error: any) {
+			console.error('Medical case translation failed:', error);
+			throw new Error(`Translation failed: ${error?.message || 'Unknown error'}`);
+		}
+	}
+
+	/**
+	 * Apply translation to create a localized version of the case
+	 */
+	private applyTranslation(medicalCase: MedicalCase, targetLanguage: string): MedicalCase {
+		const translation = medicalCase.translations?.get(targetLanguage);
+		if (!translation) {
+			return medicalCase; // Return original if no translation
+		}
+
+		return {
+			...medicalCase,
+			language: targetLanguage,
+			chiefComplaint: translation.chiefComplaint,
+			symptoms: translation.symptoms,
+			medicalHistory: translation.medicalHistory,
+			currentMedications: translation.currentMedications,
+			allergies: translation.allergies,
+			diagnosis: translation.diagnosis || medicalCase.diagnosis,
+			treatment: translation.treatment || medicalCase.treatment,
+			requiresTranslation: false
+		};
+	}
+
+	/**
+	 * Translate a single field
+	 */
+	private async translateField(
+		text: string,
+		sourceLanguage: string,
+		targetLanguage: string,
+		context: 'diagnosis' | 'treatment' | 'medication' | 'symptoms' | 'general',
+		medicalCase: MedicalCase
+	): Promise<string> {
+		const translation = await medicalTranslationService.translateMedicalText({
+			text,
+			sourceLanguage,
+			targetLanguage,
+			medicalContext: context,
+			urgency: medicalCase.urgency,
+			caseId: medicalCase.id
+		});
+
+		return translation.translatedText;
+	}
+
+	/**
+	 * Calculate average confidence from multiple translations
+	 */
+	private calculateAverageConfidence(translations: any[]): number {
+		if (translations.length === 0) return 0;
+		
+		const totalConfidence = translations.reduce((sum, t) => sum + t.confidence, 0);
+		return Math.round(totalConfidence / translations.length);
+	}
+
+	/**
+	 * Find similar cases across languages
+	 */
+	async findSimilarCasesCrossLanguage(
+		medicalCase: MedicalCase,
+		targetLanguages: string[],
+		options: any = {}
+	): Promise<CaseMatch[]> {
+		const allMatches: CaseMatch[] = [];
+
+		// First, find matches in original language
+		const originalMatches = await this.findSimilarCases(medicalCase, options);
+		allMatches.push(...originalMatches);
+
+		// Then translate case and search in target languages
+		for (const targetLanguage of targetLanguages) {
+			if (targetLanguage === medicalCase.language) {
+				continue; // Skip original language
+			}
+
+			try {
+				console.log(`Searching for similar cases in ${targetLanguage}...`);
+				
+				// Translate the case
+				const translatedCase = await this.translateMedicalCase(medicalCase, targetLanguage);
+				
+				// Find matches in translated language
+				const languageMatches = await this.findSimilarCases(translatedCase, {
+					...options,
+					searchLanguage: targetLanguage
+				});
+
+				// Tag matches with language info
+				const taggedMatches = languageMatches.map(match => ({
+					...match,
+					sourceLanguage: targetLanguage,
+					translationRequired: true
+				}));
+
+				allMatches.push(...taggedMatches);
+
+			} catch (error) {
+				console.warn(`Failed to search in ${targetLanguage}:`, error);
+			}
+		}
+
+		// Sort by similarity score and return top matches
+		return allMatches
+			.sort((a, b) => b.similarity - a.similarity)
+			.slice(0, options.maxResults || 10);
+	}
+
+	/**
+	 * Get supported languages for translation
+	 */
+	getSupportedLanguages(): any[] {
+		return medicalTranslationService.getSupportedLanguages();
+	}
+
+	/**
+	 * Check if case requires translation
+	 */
+	requiresTranslation(medicalCase: MedicalCase, targetLanguage: string): boolean {
+		return medicalCase.language !== targetLanguage && 
+			   !medicalCase.translations?.has(targetLanguage);
 	}
 }
 

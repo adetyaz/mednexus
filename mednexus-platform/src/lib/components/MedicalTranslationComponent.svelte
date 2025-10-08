@@ -12,26 +12,40 @@
 		MedicalTranslation
 	} from '$lib/services/medicalTranslationService';
 
-	export let originalText = '';
-	export let sourceLanguage = 'en';
-	export let targetLanguage = 'es';
-	export let medicalContext:
-		| 'diagnosis'
-		| 'symptoms'
-		| 'treatment'
-		| 'medication'
-		| 'procedure'
-		| 'general' = 'general';
-	export let urgency: 'routine' | 'urgent' | 'emergency' = 'routine';
-	export let caseId: string | undefined = undefined;
-	export let showLanguageSelector = true;
-	export let showConfidence = true;
-	export let autoTranslate = false;
+	interface Props {
+		originalText?: string;
+		sourceLanguage?: string;
+		targetLanguage?: string;
+		medicalContext?:
+			| 'diagnosis'
+			| 'symptoms'
+			| 'treatment'
+			| 'medication'
+			| 'procedure'
+			| 'general';
+		urgency?: 'routine' | 'urgent' | 'emergency';
+		caseId?: string | undefined;
+		showLanguageSelector?: boolean;
+		showConfidence?: boolean;
+		autoTranslate?: boolean;
+	}
 
-	let supportedLanguages: SupportedLanguage[] = [];
-	let translation: MedicalTranslation | null = null;
-	let isTranslating = false;
-	let translationError = '';
+	let {
+		originalText = '',
+		sourceLanguage = 'en',
+		targetLanguage = 'es',
+		medicalContext = 'general',
+		urgency = 'routine',
+		caseId = undefined,
+		showLanguageSelector = true,
+		showConfidence = true,
+		autoTranslate = false
+	}: Props = $props();
+
+	let supportedLanguages = $state<SupportedLanguage[]>([]);
+	let translation = $state<MedicalTranslation | null>(null);
+	let isTranslating = $state(false);
+	let translationError = $state('');
 
 	onMount(async () => {
 		supportedLanguages = medicalTranslationService.getSupportedLanguages();
@@ -86,10 +100,12 @@
 		return terms.length > 0 ? `${terms.length} medical terms identified` : '';
 	}
 
-	// Reactive statements
-	$: if (originalText && autoTranslate && sourceLanguage !== targetLanguage) {
-		translateText();
-	}
+	// Reactive effects
+	$effect(() => {
+		if (originalText && autoTranslate && sourceLanguage !== targetLanguage) {
+			translateText();
+		}
+	});
 </script>
 
 <div class="medical-translation-component">
@@ -100,7 +116,7 @@
 				<select
 					id="source-language"
 					bind:value={sourceLanguage}
-					on:change={() => autoTranslate && translateText()}
+					onchange={() => autoTranslate && translateText()}
 				>
 					{#each supportedLanguages as lang (lang.code)}
 						<option value={lang.code}>
@@ -117,7 +133,7 @@
 			<div class="translation-arrow">
 				<button
 					class="swap-languages"
-					on:click={() => {
+					onclick={() => {
 						const temp = sourceLanguage;
 						sourceLanguage = targetLanguage;
 						targetLanguage = temp;
@@ -134,7 +150,7 @@
 				<select
 					id="target-language"
 					bind:value={targetLanguage}
-					on:change={() => autoTranslate && translateText()}
+					onchange={() => autoTranslate && translateText()}
 				>
 					{#each supportedLanguages as lang (lang.code)}
 						<option value={lang.code}>
@@ -174,7 +190,7 @@
 				{#if !autoTranslate}
 					<button
 						class="translate-button"
-						on:click={translateText}
+						onclick={translateText}
 						disabled={isTranslating || !originalText.trim()}
 					>
 						{#if isTranslating}
@@ -249,7 +265,7 @@
 				<div class="translation-error">
 					<span class="error-icon">❌</span>
 					<span class="error-message">{translationError}</span>
-					<button class="retry-button" on:click={translateText}> 🔄 Retry </button>
+					<button class="retry-button" onclick={translateText}> 🔄 Retry </button>
 				</div>
 			{/if}
 		{/if}

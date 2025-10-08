@@ -35,7 +35,7 @@
 	} from '@lucide/svelte';
 
 	let currentStep = $state<
-		'start' | 'select-file' | 'choose-type' | 'uploading' | 'success' | 'my-files'
+		'start' | 'select-file' | 'choose-type' | 'choose-access' | 'uploading' | 'success' | 'my-files'
 	>('start');
 	let selectedFile = $state<File | null>(null);
 	let selectedDataType = $state<string>('');
@@ -48,9 +48,33 @@
 	let fileStats = $state<any>(null);
 	let doctorContext = $state<any>(null);
 
+	// Modal system
+	let showModal = $state(false);
+	let modalTitle = $state('');
+	let modalMessage = $state('');
+	let modalType = $state<'info' | 'success' | 'error'>('info');
+
+	// Sharing modal
+	let showShareModal = $state(false);
+	let shareFile = $state<any>(null);
+	let selectedInstitution = $state('');
+	let shareMessage = $state('');
+
 	// Reactive variables for wallet connection
 	let userConnected = $state(false);
 	let userWallet = $state('');
+
+	// Modal helper function
+	function showModalMessage(
+		title: string,
+		message: string,
+		type: 'info' | 'success' | 'error' = 'info'
+	) {
+		modalTitle = title;
+		modalMessage = message;
+		modalType = type;
+		showModal = true;
+	}
 
 	// Professional medical document types for institutional use
 	const dataTypes = [
@@ -123,6 +147,14 @@
 			description: 'Medical case analyses, treatment outcomes, clinical examples',
 			category: 'research',
 			icon: BookMarked
+		},
+		{
+			id: 'medical_dataset',
+			name: 'Medical AI Dataset',
+			description:
+				'Structured medical data for AI training, pattern recognition, diagnostic assistance',
+			category: 'research',
+			icon: Activity
 		}
 	];
 
@@ -146,13 +178,29 @@
 				// Get doctor context to verify institutional registration
 				const address = $walletStore.address;
 				if (address) {
-					const context = await medicalDocumentManager.getDoctorContext(address);
-					if (context.success) {
-						doctorContext = context;
-						await loadInstitutionFiles();
-					} else {
-						console.warn('Doctor not registered with medical institution:', context.message);
+					try {
+						const context = await medicalDocumentManager.getDoctorContext(address);
+						if (context.success) {
+							doctorContext = context;
+							await loadInstitutionFiles();
+							console.log('✅ Doctor context loaded from database:', context.doctor?.name);
+						} else {
+							console.warn('Doctor not registered with medical institution:', context.message);
+							doctorContext = null;
+							showModalMessage(
+								'Registration Required',
+								'Please complete doctor registration first to access document storage.',
+								'info'
+							);
+						}
+					} catch (error) {
+						console.error('Failed to load doctor context:', error);
 						doctorContext = null;
+						showModalMessage(
+							'Connection Error',
+							'Failed to connect to medical database. Please check your connection.',
+							'error'
+						);
 					}
 				}
 			})();
@@ -167,25 +215,53 @@
 	async function loadInstitutionFiles() {
 		if (!userConnected || !doctorContext) return;
 
-		const result = await medicalDocumentManager.getDoctorAccessibleDocuments(userWallet);
-		if (result.success) {
-			userFiles = result.documents;
-			const statsResult = await medicalDocumentManager.getInstitutionStatistics(userWallet);
-			if (statsResult.success) {
-				fileStats = statsResult.statistics;
+		try {
+			console.log('Loading institution files for doctor:', doctorContext.doctor?.name);
+			const result = await medicalDocumentManager.getDoctorAccessibleDocuments(userWallet);
+			if (result.success) {
+				userFiles = result.documents;
+				console.log('✅ Loaded documents:', result.documents?.length || 0);
+
+				const statsResult = await medicalDocumentManager.getInstitutionStatistics(userWallet);
+				if (statsResult.success) {
+					fileStats = statsResult.statistics;
+					console.log('✅ Loaded statistics:', statsResult.statistics);
+				} else {
+					console.warn('Failed to load statistics:', statsResult.message);
+				}
+			} else {
+				console.warn('Failed to load documents:', result.message);
+				showModalMessage(
+					'Loading Error',
+					'Failed to load documents. Please try refreshing the page.',
+					'error'
+				);
 			}
+		} catch (error) {
+			console.error('Error loading institution files:', error);
+			showModalMessage(
+				'Connection Error',
+				'Failed to connect to document storage. Please check your connection.',
+				'error'
+			);
 		}
 	}
 
 	function startUpload() {
 		if (!userConnected) {
-			alert('Please connect your institution wallet first!');
+			showModalMessage('Wallet Required', 'Please connect your institution wallet first!', 'error');
 			return;
 		}
-		if (!doctorContext) {
-			alert('Doctor registration required. Please complete institutional registration first.');
+
+		if (!doctorContext || !doctorContext.success) {
+			showModalMessage(
+				'Registration Required',
+				'Please complete doctor registration before uploading documents.',
+				'error'
+			);
 			return;
 		}
+
 		currentStep = 'select-file';
 	}
 
@@ -199,14 +275,12 @@
 
 	function selectDataType(typeId: string) {
 		selectedDataType = typeId;
-		// Auto-proceed to upload
-		setTimeout(() => {
-			uploadFile();
-		}, 500);
+		// Proceed to access level selection
+		currentStep = 'choose-access';
 	}
 
 	async function uploadFile() {
-		if (!selectedFile || !selectedDataType || !userConnected || !doctorContext) return;
+		if (!selectedFile || !selectedDataType || !userConnected) return;
 
 		currentStep = 'uploading';
 		uploading = true;
@@ -224,9 +298,9 @@
 
 			const result = await medicalDocumentManager.uploadMedicalDocument(selectedFile, userWallet, {
 				medicalDataType: selectedDataType,
-				medicalSpecialty: doctorContext.doctor.medicalSpecialty || 'General',
+				medicalSpecialty: doctorContext?.doctor?.medicalSpecialty || 'General Medicine',
 				urgencyLevel: 'routine',
-				description: `${selectedDataType} document uploaded by ${doctorContext.doctor.name}`,
+				description: `${selectedDataType} document uploaded by ${doctorContext?.doctor?.name || 'Doctor'}`,
 				accessLevel: selectedCategory,
 				tags: [selectedDataType, selectedCategory]
 			});
@@ -304,63 +378,60 @@
 		alert(details);
 	}
 
-	async function shareDocument(file: any) {
+	function shareDocument(file: any) {
 		if (!userWallet) {
-			alert('❌ Please connect your wallet first');
+			showModalMessage('Wallet Required', 'Please connect your wallet first', 'error');
 			return;
 		}
 
-		// Get list of available institutions for sharing
-		const institutions = [
-			{ id: 'mercy-general-sf', name: 'Mercy General Hospital' },
-			{ id: 'st-marys-london', name: "St. Mary's Hospital London" },
-			{ id: 'toronto-general', name: 'Toronto General Hospital' },
-			{ id: 'royal-melbourne', name: 'Royal Melbourne Hospital' }
-		];
+		// Open sharing modal
+		shareFile = file;
+		shareMessage = `Sharing medical document: ${file.fileName}`;
+		selectedInstitution = '';
+		showShareModal = true;
+	}
 
-		const institutionOptions = institutions.map((inst) => `${inst.id}: ${inst.name}`).join('\n');
-		const targetInstitution = prompt(
-			`Select institution to share with:\n\n${institutionOptions}\n\nEnter institution ID:`
-		);
-
-		if (!targetInstitution) return;
-
-		// Validate institution ID
-		const validInstitution = institutions.find((inst) => inst.id === targetInstitution.trim());
-		if (!validInstitution) {
-			alert('❌ Invalid institution ID. Please select from the list above.');
+	async function confirmShare() {
+		if (!selectedInstitution) {
+			showModalMessage(
+				'Institution Required',
+				'Please select an institution to share with',
+				'error'
+			);
 			return;
 		}
-
-		const shareMessage =
-			prompt('💬 Optional message for sharing:') || `Sharing medical document: ${file.fileName}`;
 
 		try {
-			alert('🔄 Sharing document...');
+			showShareModal = false;
+			showModalMessage('Sharing Document', 'Processing share request...', 'info');
 
 			const result = await medicalDocumentManager.shareDocument(
-				file.fileId,
+				shareFile.fileId,
 				userWallet,
-				targetInstitution.trim(),
+				selectedInstitution,
 				shareMessage
 			);
 
 			if (result.success) {
-				alert(`✅ Document shared successfully with ${validInstitution.name}!`);
+				showModalMessage(
+					'Share Successful',
+					`Document shared successfully with the selected institution!`,
+					'success'
+				);
 				// Refresh the file list
 				await loadInstitutionFiles();
 			} else {
-				alert(`❌ Failed to share document: ${result.message}`);
+				showModalMessage('Share Failed', `Failed to share document: ${result.message}`, 'error');
 			}
 		} catch (error) {
 			console.error('Share failed:', error);
-			alert('❌ Failed to share document. Please try again.');
+			showModalMessage('Share Error', 'Failed to share document. Please try again.', 'error');
 		}
 	}
 
 	async function downloadDocument(file: any) {
 		if (!userWallet) {
-			alert('Please connect your wallet first');
+			showModalMessage('Wallet Required', 'Please connect your wallet first', 'error');
 			return;
 		}
 
@@ -395,7 +466,11 @@
 			}
 		} catch (error) {
 			console.error('Download failed:', error);
-			alert('Failed to download document. Please try again.');
+			showModalMessage(
+				'Download Failed',
+				'Failed to download document. Please try again.',
+				'error'
+			);
 		}
 	}
 </script>
@@ -411,79 +486,58 @@
 			<p class="hero-subtitle">Secure decentralized storage for medical institutions</p>
 		</div>
 
-		{#if !userConnected}
-			<div class="connect-wallet">
-				<div class="connect-icon">
-					<Shield size={32} />
-				</div>
-				<h2>Connect Doctor Wallet</h2>
-				<p>Connect your verified doctor wallet to access institutional document storage.</p>
-				<p class="help-text">Use the "Connect Wallet" button in the navigation above.</p>
-			</div>
-		{:else if !doctorContext}
-			<div class="connect-wallet">
-				<div class="connect-icon">
-					<Building2 size={32} />
-				</div>
-				<h2>Medical Registration Required</h2>
-				<p>Your wallet is connected but not registered with a medical institution.</p>
-				<p class="help-text">
-					Please complete doctor verification and institutional registration first.
-				</p>
-			</div>
-		{:else}
-			<div class="doctor-info">
-				<div class="institution-badge">
-					<Building size={20} />
-					<div>
-						<div class="institution-name">
-							{doctorContext.institution?.name || 'Medical Institution'}
-						</div>
-						<div class="doctor-details">
-							Dr. {doctorContext.doctor?.name} • {doctorContext.doctor?.department}
-						</div>
+		<div class="doctor-info">
+			<div class="institution-badge">
+				<Building size={20} />
+				<div>
+					<div class="institution-name">
+						{doctorContext?.institution?.name || 'Medical Institution'}
+					</div>
+					<div class="doctor-details">
+						{doctorContext?.doctor?.name ? `Dr. ${doctorContext.doctor.name}` : 'Doctor'} • {doctorContext
+							?.doctor?.department || 'General Medicine'}
 					</div>
 				</div>
 			</div>
+		</div>
 
-			<div class="actions">
-				<button class="big-button upload-button" onclick={startUpload}>
-					<div class="button-icon">
-						<Upload size={24} />
-					</div>
-					<div class="button-text">
-						<strong>Upload Document</strong>
-						<small>Add medical documentation</small>
-					</div>
-				</button>
-
-				<button class="big-button files-button" onclick={goToMyFiles}>
-					<div class="button-icon">
-						<FolderOpen size={24} />
-					</div>
-					<div class="button-text">
-						<strong>Document Library</strong>
-						<small>{fileStats?.totalDocuments || 0} documents stored</small>
-					</div>
-				</button>
-			</div>
-
-			{#if fileStats && fileStats.totalFiles > 0}
-				<div class="quick-stats">
-					<div class="stat-card">
-						<div class="stat-number">{fileStats.totalFiles}</div>
-						<div class="stat-label">Documents</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-number">{formatFileSize(fileStats.totalSize)}</div>
-						<div class="stat-label">Storage Used</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-number">{fileStats.recentFiles.length}</div>
-						<div class="stat-label">Recent</div>
-					</div>
+		<div class="actions">
+			<button class="big-button upload-button" onclick={startUpload}>
+				<div class="button-icon">
+					<Upload size={24} />
 				</div>
-			{/if}
+				<div class="button-text">
+					<strong>Upload Document</strong>
+					<small>Add medical documentation</small>
+				</div>
+			</button>
+
+			<button class="big-button files-button" onclick={goToMyFiles}>
+				<div class="button-icon">
+					<FolderOpen size={24} />
+				</div>
+				<div class="button-text">
+					<strong>Document Library</strong>
+					<small>{fileStats?.totalDocuments || 0} documents stored</small>
+				</div>
+			</button>
+		</div>
+
+		{#if fileStats && fileStats.totalFiles > 0}
+			<div class="quick-stats">
+				<div class="stat-card">
+					<div class="stat-number">{fileStats.totalFiles}</div>
+					<div class="stat-label">Documents</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number">{formatFileSize(fileStats.totalSize)}</div>
+					<div class="stat-label">Storage Used</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number">{fileStats.recentFiles.length}</div>
+					<div class="stat-label">Recent</div>
+				</div>
+			</div>
 		{/if}
 	</div>
 {/if}
@@ -570,6 +624,93 @@
 		<div class="screen-actions">
 			<button class="back-button" onclick={() => (currentStep = 'select-file')}>
 				<ArrowLeft size={16} /> Choose Different File
+			</button>
+		</div>
+	</div>
+{/if}
+
+<!-- Access Level Selection Screen -->
+{#if currentStep === 'choose-access'}
+	<div class="screen access-select-screen">
+		<div class="screen-header">
+			<Shield size={20} />
+			<h1>Document Access Level</h1>
+		</div>
+		<p>Choose who can access this medical document within your institution.</p>
+
+		<div class="access-options">
+			<button
+				class="access-card {selectedCategory === 'private' ? 'selected' : ''}"
+				onclick={() => (selectedCategory = 'private')}
+			>
+				<div class="access-header">
+					<User size={20} />
+					<div class="access-info">
+						<div class="access-name">Private</div>
+						<div class="access-desc">Only you can access</div>
+					</div>
+				</div>
+				<div class="access-details">
+					Document visible only to you. Use for personal notes, drafts, or sensitive information.
+				</div>
+			</button>
+
+			<button
+				class="access-card {selectedCategory === 'departmental' ? 'selected' : ''}"
+				onclick={() => (selectedCategory = 'departmental')}
+			>
+				<div class="access-header">
+					<Users size={20} />
+					<div class="access-info">
+						<div class="access-name">Departmental</div>
+						<div class="access-desc">Your department colleagues</div>
+					</div>
+				</div>
+				<div class="access-details">
+					Share with your department team. Good for protocols, procedures, and collaborative
+					documents.
+				</div>
+			</button>
+
+			<button
+				class="access-card {selectedCategory === 'institutional' ? 'selected' : ''}"
+				onclick={() => (selectedCategory = 'institutional')}
+			>
+				<div class="access-header">
+					<Building2 size={20} />
+					<div class="access-info">
+						<div class="access-name">Institutional</div>
+						<div class="access-desc">All hospital staff</div>
+					</div>
+				</div>
+				<div class="access-details">
+					Available to all staff at your institution. Use for hospital-wide policies and procedures.
+				</div>
+			</button>
+
+			<button
+				class="access-card {selectedCategory === 'shared' ? 'selected' : ''}"
+				onclick={() => (selectedCategory = 'shared')}
+			>
+				<div class="access-header">
+					<Share2 size={20} />
+					<div class="access-info">
+						<div class="access-name">Shared Research</div>
+						<div class="access-desc">Medical network collaboration</div>
+					</div>
+				</div>
+				<div class="access-details">
+					Share with partner medical institutions for research and collaboration.
+				</div>
+			</button>
+		</div>
+
+		<div class="screen-actions">
+			<button class="back-button" onclick={() => (currentStep = 'choose-type')}>
+				<ArrowLeft size={16} /> Change Document Type
+			</button>
+			<button class="continue-button" onclick={() => uploadFile()}>
+				Upload Document <Upload size={16} />
 			</button>
 		</div>
 	</div>
@@ -795,6 +936,69 @@
 			<button class="back-button" onclick={() => (currentStep = 'start')}>
 				<ArrowLeft size={16} /> Back to Home
 			</button>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal Component -->
+{#if showModal}
+	<div class="modal-overlay" onclick={() => (showModal = false)}>
+		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header {modalType}">
+				<h3>{modalTitle}</h3>
+				<button class="modal-close" onclick={() => (showModal = false)}>×</button>
+			</div>
+			<div class="modal-body">
+				<p>{modalMessage}</p>
+			</div>
+			<div class="modal-actions">
+				<button class="modal-button" onclick={() => (showModal = false)}>OK</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Share Document Modal -->
+{#if showShareModal && shareFile}
+	<div class="modal-overlay" onclick={() => (showShareModal = false)}>
+		<div class="modal-content share-modal" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-header">
+				<h3>🔗 Share Document</h3>
+				<button class="modal-close" onclick={() => (showShareModal = false)}>×</button>
+			</div>
+			<div class="modal-body">
+				<div class="share-info">
+					<p><strong>Document:</strong> {shareFile.fileName}</p>
+					<p><strong>Type:</strong> {shareFile.medicalDataType}</p>
+				</div>
+
+				<div class="form-group">
+					<label for="institution-select">Select Institution:</label>
+					<select id="institution-select" bind:value={selectedInstitution}>
+						<option value="">Choose an institution...</option>
+						<option value="mercy-general-sf">Mercy General Hospital</option>
+						<option value="st-marys-london">St. Mary's Hospital London</option>
+						<option value="toronto-general">Toronto General Hospital</option>
+						<option value="royal-melbourne">Royal Melbourne Hospital</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="share-message">Message (optional):</label>
+					<textarea
+						id="share-message"
+						bind:value={shareMessage}
+						placeholder="Add a message about why you're sharing this document..."
+						rows="3"
+					></textarea>
+				</div>
+			</div>
+			<div class="modal-actions">
+				<button class="modal-button secondary" onclick={() => (showShareModal = false)}
+					>Cancel</button
+				>
+				<button class="modal-button primary" onclick={() => confirmShare()}>Share Document</button>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -1142,6 +1346,83 @@
 		color: #6b7280;
 		line-height: 1.5;
 		font-size: 0.875rem;
+	}
+
+	/* Access Level Selection */
+	.access-options {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		max-width: 600px;
+		margin: 2rem 0;
+	}
+
+	.access-card {
+		padding: 1.5rem;
+		background: white;
+		border: 2px solid #e5e7eb;
+		border-radius: 1rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		text-align: left;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.access-card:hover {
+		border-color: #3b82f6;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	}
+
+	.access-card.selected {
+		border-color: #059669;
+		background: #f0fdf4;
+	}
+
+	.access-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.access-info {
+		flex: 1;
+	}
+
+	.access-name {
+		font-weight: 600;
+		color: #1f2937;
+		font-size: 1rem;
+	}
+
+	.access-desc {
+		font-size: 0.75rem;
+		color: #6b7280;
+		margin-top: 0.25rem;
+	}
+
+	.access-details {
+		color: #6b7280;
+		line-height: 1.5;
+		font-size: 0.875rem;
+	}
+
+	.continue-button {
+		background: #059669;
+		color: white;
+		padding: 0.75rem 2rem;
+		border: none;
+		border-radius: 0.5rem;
+		font-weight: 600;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		transition: background 0.2s;
+	}
+
+	.continue-button:hover {
+		background: #047857;
 	}
 
 	/* Upload Progress */
@@ -1568,5 +1849,159 @@
 		.big-button {
 			min-width: auto;
 		}
+	}
+
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+
+	.modal-content {
+		background: white;
+		border-radius: 1rem;
+		max-width: 500px;
+		width: 90%;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+	}
+
+	.modal-header {
+		padding: 1.5rem 1.5rem 0 1.5rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-bottom: 1px solid #e5e7eb;
+		margin-bottom: 1rem;
+	}
+
+	.modal-header.success {
+		color: #059669;
+	}
+
+	.modal-header.error {
+		color: #ef4444;
+	}
+
+	.modal-header.info {
+		color: #3b82f6;
+	}
+
+	.modal-header h3 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 600;
+	}
+
+	.modal-close {
+		background: none;
+		border: none;
+		font-size: 1.5rem;
+		cursor: pointer;
+		color: #6b7280;
+		padding: 0;
+		width: 2rem;
+		height: 2rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.modal-close:hover {
+		color: #374151;
+	}
+
+	.modal-body {
+		padding: 0 1.5rem 1rem 1.5rem;
+	}
+
+	.modal-body p {
+		margin: 0;
+		color: #6b7280;
+		line-height: 1.5;
+	}
+
+	.modal-actions {
+		padding: 1rem 1.5rem 1.5rem 1.5rem;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.modal-button {
+		background: #3b82f6;
+		color: white;
+		border: none;
+		padding: 0.5rem 1.5rem;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		font-weight: 500;
+	}
+
+	.modal-button:hover {
+		background: #2563eb;
+	}
+
+	.modal-button.secondary {
+		background: #f3f4f6;
+		color: #374151;
+	}
+
+	.modal-button.secondary:hover {
+		background: #e5e7eb;
+	}
+
+	/* Share Modal Specific Styles */
+	.share-modal {
+		max-width: 600px;
+	}
+
+	.share-info {
+		background: #f8fafc;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1.5rem;
+	}
+
+	.share-info p {
+		margin: 0.5rem 0;
+	}
+
+	.form-group {
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		color: #374151;
+		font-weight: 500;
+	}
+
+	.form-group select,
+	.form-group textarea {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		font-size: 0.875rem;
+		transition: border-color 0.2s;
+	}
+
+	.form-group select:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #3b82f6;
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	}
+
+	.form-group textarea {
+		resize: vertical;
 	}
 </style>

@@ -225,22 +225,7 @@
 									verification and institutional registration.
 								</p>
 							</div>
-							<div class="mt-4">
-								<a
-									href="/register"
-									class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 transition-colors duration-200"
-								>
-									Complete Verification
-									<svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9 5l7 7-7 7"
-										></path>
-									</svg>
-								</a>
-							</div>
+						
 						</div>
 					</div>
 				</div>

@@ -11,7 +11,7 @@ export const NETWORK_CONFIG = {
 	// Network configuration
 	network: {
 		name: '0G-Galileo-Testnet',
-		chainId: PUBLIC_OG_CHAIN_ID ? parseInt(PUBLIC_OG_CHAIN_ID) : 16601,
+		chainId: PUBLIC_OG_CHAIN_ID ? parseInt(PUBLIC_OG_CHAIN_ID) : 16602,
 		rpcUrl: PUBLIC_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai',
 		explorer: 'https://chainscan-galileo.0g.ai',
 		symbol: 'OG'
@@ -19,10 +19,10 @@ export const NETWORK_CONFIG = {
 
 	// 0G Storage contracts
 	storage: {
-		flowContract: '0xbD75117F80b4E22698D0Cd7612d92BDb8eaff628',
-		mineContract: '0x3A0d1d67497Ad770d6f72e7f4B8F0BAbaa2A649C',
-		marketContract: '0x53191725d260221bBa307D8EeD6e2Be8DD265e19',
-		rewardContract: '0xd3D4D91125D76112AE256327410Dd0414Ee08Cb4'
+		flowContract: '0x22E03a6A89B950F1c82ec5e74F8eCa321a105296',
+		mineContract: '0x00A9E9604b0538e06b268Fb297Df333337f9593b',
+		marketContract: '0x53191725d260221bBa307D8EeD6e2Be8DD265e19', // Keep existing if working
+		rewardContract: '0xA97B57b4BdFEA2D0a25e535bd849ad4e6C440A69'
 	},
 
 	// 0G DA contract
@@ -32,8 +32,8 @@ export const NETWORK_CONFIG = {
 
 	// MedNexus contracts (deployed on 0G testnet)
 	contracts: {
-		medicalVerification: PUBLIC_MEDICAL_VERIFICATION_CONTRACT || '0x2b83DDc5D0dd317D2A1e4adA44819b26CA54A652',
-		medicalCollaborationHub: PUBLIC_COLLABORATION_HUB_CONTRACT || '0xdcEcd3Cf494069f9FB5614e05Efa4Fa45C4f949c', 
+		medicalVerification: PUBLIC_MEDICAL_VERIFICATION_CONTRACT || '0x24BF26c9676247eFD93C1D765132FE7d529E5929',
+		medicalCollaborationHub: PUBLIC_COLLABORATION_HUB_CONTRACT || '0x94b8Bd13ed6Ab0bE0C0eb904EC1bf456C37AE23B', 
 		medicalIntelligenceINFT: PUBLIC_MEDICAL_INFT_CONTRACT || '0xe3259D46d5A4F900B5f9D1289CBf9791D9cc8b59'
 	},
 

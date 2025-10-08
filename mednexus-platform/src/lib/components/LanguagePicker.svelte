@@ -1,21 +1,24 @@
-<!--
-	Language Picker Component
-	Wave 2: Quick language selection for medical translation
-	Used in case matching and consultation interfaces
--->
-
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { medicalTranslationService } from '$lib/services/medicalTranslationService';
 	import type { SupportedLanguage } from '$lib/services/medicalTranslationService';
 
-	export let selectedLanguage = 'en';
-	export let compact = false;
-	export let showFullSupport = false; // Only show languages with full medical support
-	export let label = 'Language';
+	interface Props {
+		selectedLanguage?: string;
+		compact?: boolean;
+		showFullSupport?: boolean; // Only show languages with full medical support
+		label?: string;
+	}
 
-	let supportedLanguages: SupportedLanguage[] = [];
-	let isOpen = false;
+	let {
+		selectedLanguage = 'en',
+		compact = false,
+		showFullSupport = false,
+		label = 'Language'
+	}: Props = $props();
+
+	let supportedLanguages = $state<SupportedLanguage[]>([]);
+	let isOpen = $state(false);
 
 	onMount(() => {
 		supportedLanguages = medicalTranslationService.getSupportedLanguages();

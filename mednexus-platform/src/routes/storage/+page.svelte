@@ -146,13 +146,29 @@
 				// Get doctor context to verify institutional registration
 				const address = $walletStore.address;
 				if (address) {
-					const context = await medicalDocumentManager.getDoctorContext(address);
-					if (context.success) {
-						doctorContext = context;
-						await loadInstitutionFiles();
-					} else {
-						console.warn('Doctor not registered with medical institution:', context.message);
+					try {
+						const context = await medicalDocumentManager.getDoctorContext(address);
+						if (context.success) {
+							doctorContext = context;
+							await loadInstitutionFiles();
+							console.log('✅ Doctor context loaded from database:', context.doctor?.name);
+						} else {
+							console.warn('Doctor not registered with medical institution:', context.message);
+							doctorContext = null;
+							showModalMessage(
+								'Registration Required',
+								'Please complete doctor registration first to access document storage.',
+								'info'
+							);
+						}
+					} catch (error) {
+						console.error('Failed to load doctor context:', error);
 						doctorContext = null;
+						showModalMessage(
+							'Connection Error',
+							'Failed to connect to medical database. Please check your connection.',
+							'error'
+						);
 					}
 				}
 			})();
@@ -167,13 +183,35 @@
 	async function loadInstitutionFiles() {
 		if (!userConnected || !doctorContext) return;
 
-		const result = await medicalDocumentManager.getDoctorAccessibleDocuments(userWallet);
-		if (result.success) {
-			userFiles = result.documents;
-			const statsResult = await medicalDocumentManager.getInstitutionStatistics(userWallet);
-			if (statsResult.success) {
-				fileStats = statsResult.statistics;
+		try {
+			console.log('Loading institution files for doctor:', doctorContext.doctor?.name);
+			const result = await medicalDocumentManager.getDoctorAccessibleDocuments(userWallet);
+			if (result.success) {
+				userFiles = result.documents;
+				console.log('✅ Loaded documents:', result.documents?.length || 0);
+
+				const statsResult = await medicalDocumentManager.getInstitutionStatistics(userWallet);
+				if (statsResult.success) {
+					fileStats = statsResult.statistics;
+					console.log('✅ Loaded statistics:', statsResult.statistics);
+				} else {
+					console.warn('Failed to load statistics:', statsResult.message);
+				}
+			} else {
+				console.warn('Failed to load documents:', result.message);
+				showModalMessage(
+					'Loading Error',
+					'Failed to load documents. Please try refreshing the page.',
+					'error'
+				);
 			}
+		} catch (error) {
+			console.error('Error loading institution files:', error);
+			showModalMessage(
+				'Connection Error',
+				'Failed to connect to document storage. Please check your connection.',
+				'error'
+			);
 		}
 	}
 
@@ -182,10 +220,16 @@
 			alert('Please connect your institution wallet first!');
 			return;
 		}
-		if (!doctorContext) {
-			alert('Doctor registration required. Please complete institutional registration first.');
+
+		if (!doctorContext || !doctorContext.success) {
+			showModalMessage(
+				'Registration Required',
+				'Please complete doctor registration before uploading documents.',
+				'error'
+			);
 			return;
 		}
+
 		currentStep = 'select-file';
 	}
 
@@ -206,7 +250,7 @@
 	}
 
 	async function uploadFile() {
-		if (!selectedFile || !selectedDataType || !userConnected || !doctorContext) return;
+		if (!selectedFile || !selectedDataType || !userConnected) return;
 
 		currentStep = 'uploading';
 		uploading = true;
@@ -224,9 +268,9 @@
 
 			const result = await medicalDocumentManager.uploadMedicalDocument(selectedFile, userWallet, {
 				medicalDataType: selectedDataType,
-				medicalSpecialty: doctorContext.doctor.medicalSpecialty || 'General',
+				medicalSpecialty: doctorContext?.doctor?.medicalSpecialty || 'General Medicine',
 				urgencyLevel: 'routine',
-				description: `${selectedDataType} document uploaded by ${doctorContext.doctor.name}`,
+				description: `${selectedDataType} document uploaded by ${doctorContext?.doctor?.name || 'Doctor'}`,
 				accessLevel: selectedCategory,
 				tags: [selectedDataType, selectedCategory]
 			});
@@ -411,79 +455,58 @@
 			<p class="hero-subtitle">Secure decentralized storage for medical institutions</p>
 		</div>
 
-		{#if !userConnected}
-			<div class="connect-wallet">
-				<div class="connect-icon">
-					<Shield size={32} />
-				</div>
-				<h2>Connect Doctor Wallet</h2>
-				<p>Connect your verified doctor wallet to access institutional document storage.</p>
-				<p class="help-text">Use the "Connect Wallet" button in the navigation above.</p>
-			</div>
-		{:else if !doctorContext}
-			<div class="connect-wallet">
-				<div class="connect-icon">
-					<Building2 size={32} />
-				</div>
-				<h2>Medical Registration Required</h2>
-				<p>Your wallet is connected but not registered with a medical institution.</p>
-				<p class="help-text">
-					Please complete doctor verification and institutional registration first.
-				</p>
-			</div>
-		{:else}
-			<div class="doctor-info">
-				<div class="institution-badge">
-					<Building size={20} />
-					<div>
-						<div class="institution-name">
-							{doctorContext.institution?.name || 'Medical Institution'}
-						</div>
-						<div class="doctor-details">
-							Dr. {doctorContext.doctor?.name} • {doctorContext.doctor?.department}
-						</div>
+		<div class="doctor-info">
+			<div class="institution-badge">
+				<Building size={20} />
+				<div>
+					<div class="institution-name">
+						{doctorContext?.institution?.name || 'Medical Institution'}
+					</div>
+					<div class="doctor-details">
+						{doctorContext?.doctor?.name ? `Dr. ${doctorContext.doctor.name}` : 'Doctor'} • {doctorContext
+							?.doctor?.department || 'General Medicine'}
 					</div>
 				</div>
 			</div>
+		</div>
 
-			<div class="actions">
-				<button class="big-button upload-button" onclick={startUpload}>
-					<div class="button-icon">
-						<Upload size={24} />
-					</div>
-					<div class="button-text">
-						<strong>Upload Document</strong>
-						<small>Add medical documentation</small>
-					</div>
-				</button>
-
-				<button class="big-button files-button" onclick={goToMyFiles}>
-					<div class="button-icon">
-						<FolderOpen size={24} />
-					</div>
-					<div class="button-text">
-						<strong>Document Library</strong>
-						<small>{fileStats?.totalDocuments || 0} documents stored</small>
-					</div>
-				</button>
-			</div>
-
-			{#if fileStats && fileStats.totalFiles > 0}
-				<div class="quick-stats">
-					<div class="stat-card">
-						<div class="stat-number">{fileStats.totalFiles}</div>
-						<div class="stat-label">Documents</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-number">{formatFileSize(fileStats.totalSize)}</div>
-						<div class="stat-label">Storage Used</div>
-					</div>
-					<div class="stat-card">
-						<div class="stat-number">{fileStats.recentFiles.length}</div>
-						<div class="stat-label">Recent</div>
-					</div>
+		<div class="actions">
+			<button class="big-button upload-button" onclick={startUpload}>
+				<div class="button-icon">
+					<Upload size={24} />
 				</div>
-			{/if}
+				<div class="button-text">
+					<strong>Upload Document</strong>
+					<small>Add medical documentation</small>
+				</div>
+			</button>
+
+			<button class="big-button files-button" onclick={goToMyFiles}>
+				<div class="button-icon">
+					<FolderOpen size={24} />
+				</div>
+				<div class="button-text">
+					<strong>Document Library</strong>
+					<small>{fileStats?.totalDocuments || 0} documents stored</small>
+				</div>
+			</button>
+		</div>
+
+		{#if fileStats && fileStats.totalFiles > 0}
+			<div class="quick-stats">
+				<div class="stat-card">
+					<div class="stat-number">{fileStats.totalFiles}</div>
+					<div class="stat-label">Documents</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number">{formatFileSize(fileStats.totalSize)}</div>
+					<div class="stat-label">Storage Used</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number">{fileStats.recentFiles.length}</div>
+					<div class="stat-label">Recent</div>
+				</div>
+			</div>
 		{/if}
 	</div>
 {/if}

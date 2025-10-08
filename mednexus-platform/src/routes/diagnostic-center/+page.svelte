@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { walletStore } from '$lib/wallet';
+	import { walletStore, walletManager } from '$lib/wallet';
 	import {
 		zeroGCaseMatchingService as caseMatchingService,
 		type MedicalCase
@@ -79,9 +79,25 @@
 
 	// Main diagnostic analysis function
 	async function runDiagnosticAnalysis() {
+		// First, ensure wallet is connected and trigger connection if needed
 		if (!$walletStore.isConnected) {
-			alert('Please connect your wallet to access diagnostic services');
-			return;
+			console.log('🔗 Connecting wallet for 0G Compute analysis...');
+			try {
+				await walletManager.connect();
+				// Wait for wallet connection
+				await new Promise((resolve) => {
+					const unsubscribe = walletStore.subscribe((wallet) => {
+						if (wallet.isConnected && wallet.address) {
+							console.log('✅ Wallet connected, proceeding with analysis...');
+							unsubscribe();
+							resolve(true);
+						}
+					});
+				});
+			} catch (error) {
+				console.error('Failed to connect wallet:', error);
+				return;
+			}
 		}
 
 		if (!patientCase.chiefComplaint?.trim()) {
@@ -154,6 +170,70 @@
 			urgency: 'routine'
 		};
 		analysisResults = [];
+	}
+
+	/**
+	 * Navigate to consultation page with pre-filled case data
+	 */
+	async function navigateToConsultation(analysisResult: PatternAnalysisResult) {
+		try {
+			console.log('🩺 Starting expert consultation request...');
+
+		// Convert analysis result back to medical case format for consultation
+		const consultationCase = {
+			id: analysisResult.case?.id || `case_${Date.now()}`,
+			patientId: analysisResult.case?.patientId || `P-${Date.now()}`,
+			hospitalId: analysisResult.case?.hospitalId || 'current_institution',
+			symptoms: analysisResult.case?.symptoms || [],
+			duration: '2 weeks', // Default, could be extracted from case
+			previousTreatments: analysisResult.case?.medicalHistory || [],
+			diagnosticTests: [],
+			urgency: (analysisResult.case?.urgency as 'routine' | 'urgent' | 'emergency') || 'routine',
+			specialty: analysisResult.case?.specialty || 'Internal Medicine',
+			description: analysisResult.case?.chiefComplaint || 'Analysis case',
+			demographics: {
+				age: analysisResult.case?.demographics?.age || 0,
+				gender: analysisResult.case?.demographics?.gender || 'other'
+			}
+		};			// Store the case and analysis for the consultation page
+			sessionStorage.setItem('pendingConsultationCase', JSON.stringify(consultationCase));
+			sessionStorage.setItem('aiAnalysisResult', JSON.stringify(analysisResult));
+
+			// Navigate to consultations page
+			window.location.href = '/consultations?fromDiagnosis=true';
+		} catch (error) {
+			console.error('Failed to initiate consultation:', error);
+			alert('Failed to start consultation. Please try again.');
+		}
+	}
+
+	/**
+	 * View similar cases (placeholder for future implementation)
+	 */
+	function viewRelatedCases(analysisResult: PatternAnalysisResult) {
+		console.log('🔍 Viewing related cases for:', analysisResult.case?.chiefComplaint || 'Unknown case');
+
+		// For now, show a simple alert with case information
+		const patterns =
+			analysisResult.identifiedPatterns?.map((p) => p.description).join('\n- ') ||
+			'No specific patterns identified';
+
+		alert(`Related Cases & Documents:
+
+Chief Complaint: ${analysisResult.case?.chiefComplaint || 'Not specified'}
+
+Identified Patterns:
+- ${patterns}
+
+Differential Diagnoses:
+- ${(analysisResult.recommendedDifferentials ?? []).slice(0, 3).join('\n- ')}
+
+This feature will be enhanced to show:
+• Similar cases from the medical network
+• Related research papers and protocols
+• Expert opinions on similar presentations
+
+For now, you can request an expert consultation to discuss similar cases.`);
 	}
 </script>
 
@@ -395,8 +475,15 @@
 						</button>
 					</div>
 
-					<!-- Analyze Button -->
-					<div class="flex justify-end">
+					<!-- Demo and Analyze Buttons -->
+					<div class="flex justify-end gap-3">
+						<!-- <button
+							onclick={loadDemoCADCase}
+							class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center gap-2"
+							type="button"
+						>
+							📋 Load Demo Case
+						</button> -->
 						<button
 							onclick={runDiagnosticAnalysis}
 							disabled={isAnalyzing ||
@@ -507,6 +594,107 @@
 													</li>
 												{/each}
 											</ul>
+										</div>
+									{/if}
+
+									<!-- Consultation Integration Section -->
+									{#if (result.confidenceScore ?? 0) > 0}
+										<div class="mt-6 pt-4 border-t border-gray-200">
+											<h4 class="font-medium text-gray-900 mb-3 text-sm">
+												🤝 Expert Consultation Available
+											</h4>
+
+											<div class="bg-blue-50 rounded-lg p-4">
+												<div class="flex items-start gap-3">
+													<div class="flex-shrink-0">
+														<svg
+															class="w-5 h-5 text-blue-600 mt-0.5"
+															xmlns="http://www.w3.org/2000/svg"
+															fill="none"
+															viewBox="0 0 24 24"
+															stroke-width="1.5"
+															stroke="currentColor"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+															/>
+														</svg>
+													</div>
+													<div class="flex-1">
+														<p class="text-sm text-blue-900 mb-3">
+															Connect with expert doctors who have experience with similar cases.
+															Our AI analysis has been integrated to help specialists understand
+															your case better.
+														</p>
+
+														<div class="flex flex-wrap gap-2">
+															<button
+																onclick={() => navigateToConsultation(result)}
+																class="inline-flex items-center gap-1.5 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors"
+															>
+																<svg
+																	class="w-3 h-3"
+																	xmlns="http://www.w3.org/2000/svg"
+																	fill="none"
+																	viewBox="0 0 24 24"
+																	stroke-width="1.5"
+																	stroke="currentColor"
+																>
+																	<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
+																	/>
+																</svg>
+																Request Expert Consultation
+															</button>
+
+															<button
+																onclick={() => viewRelatedCases(result)}
+																class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs px-3 py-1.5 rounded-md hover:bg-gray-200 transition-colors"
+															>
+																<svg
+																	class="w-3 h-3"
+																	xmlns="http://www.w3.org/2000/svg"
+																	fill="none"
+																	viewBox="0 0 24 24"
+																	stroke-width="1.5"
+																	stroke="currentColor"
+																>
+																	<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+																	/>
+																</svg>
+																View Similar Cases
+															</button>
+														</div>
+
+														{#if (result.identifiedPatterns ?? []).length > 0}
+															<div class="mt-3 pt-3 border-t border-blue-200">
+																<p class="text-xs text-blue-700 mb-2">
+																	<strong>AI Analysis Ready:</strong>
+																	{(result.identifiedPatterns ?? []).length} patterns identified with {(result.confidenceScore ?? 0).toFixed(
+																		1
+																	)}% confidence
+																</p>
+																<div class="flex flex-wrap gap-1">
+																	{#each (result.identifiedPatterns ?? []).slice(0, 3) as pattern}
+																		<span
+																			class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full"
+																		>
+																			{pattern.patternType.replace('_', ' ')}
+																		</span>
+																	{/each}
+																</div>
+															</div>
+														{/if}
+													</div>
+												</div>
+											</div>
 										</div>
 									{/if}
 								</div>

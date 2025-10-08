@@ -40,6 +40,9 @@
 		"@lucide/svelte": "^0.543.0",
 		"@reown/appkit": "^1.8.1",
 		"@reown/appkit-adapter-ethers": "^1.8.1",
+		"@supabase/supabase-js": "^2.74.0",
+		"@types/crypto-js": "^4.2.2",
+		"crypto-js": "^4.2.0",
 		"ethers": "6.13.1"
 	}
 }

@@ -190,7 +190,7 @@ const DEMO_DOCTORS = [
 	{
 		walletAddress: '0x59A0B39f49EBe851c97E654166A480E7d41122c6', // Test wallet for Dr. Michael Chen
 		name: 'Dr. Michael Chen',
-		medicalLicenseNumber: 'UK-GMC-456789',
+		medicalLicenseNumber: 'UK-GMC-654321',
 		institutionId: 'st-marys-london',
 		department: 'Emergency Medicine',
 		medicalSpecialty: 'Emergency Medicine',

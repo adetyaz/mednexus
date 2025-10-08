@@ -12,14 +12,7 @@
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
 
-	// Base navigation items
-	const baseNavItems = [
-		{ href: '/', label: 'Home', icon: 'home' },
-		{ href: '/storage', label: 'Document Storage', icon: 'storage' },
-		{ href: '/verification', label: 'Verify Credentials', icon: 'verify' },
-		{ href: '/register', label: 'Register', icon: 'register' }
-	];
-
+	
 	// Dashboard navigation items (shown when wallet is connected)
 	const dashboardNavItems = [
 		{
@@ -108,15 +101,7 @@
 					>
 						🩺 Diagnostics
 					</a>
-					<a
-						href="/register"
-						class="text-sm font-medium transition-colors duration-200 {isActive('/register')
-							? 'text-blue-600 border-b-2 border-blue-600 pb-1'
-							: 'text-gray-600 hover:text-gray-900'}"
-					>
-						Register
-					</a>
-
+					
 					<!-- Dashboard Section -->
 					{#if dashboardItems.length > 0}
 						<div class="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
@@ -257,17 +242,7 @@
 						>
 							🩺 Diagnostic Center
 						</a>
-						<a
-							href="/register"
-							class="block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 {isActive(
-								'/register'
-							)
-								? 'bg-blue-100 text-blue-700'
-								: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}"
-							onclick={() => (mobileMenuOpen = false)}
-						>
-							Register
-						</a>
+					
 
 						<!-- Dashboard links -->
 						{#if dashboardItems.length > 0}

@@ -3,11 +3,6 @@
 
 	let isLoading = $state(false);
 
-	// Debug logging
-	$effect(() => {
-		console.log('WalletConnect: walletStore state:', $walletStore);
-	});
-
 	async function connect() {
 		console.log('WalletConnect: Connect button clicked');
 		isLoading = true;

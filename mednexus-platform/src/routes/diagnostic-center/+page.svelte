@@ -10,11 +10,15 @@
 		type PatternAnalysisResult
 	} from '$lib/services/patternRecognitionService';
 	import { medicalDocumentManager } from '$lib/services/medicalDocumentManagementService';
+	import { crossBorderConsultationService } from '$lib/services/crossBorderConsultationService';
+	import { medicalAIManager, type AIProvider } from '$lib/services/medicalAIProviderManager';
 
 	// Component state
 	let isAnalyzing = $state(false);
 	let analysisResults = $state<PatternAnalysisResult[]>([]);
 	let serviceStatus = $state('Initializing services...');
+	let selectedAIProvider = $state<AIProvider>('0g-compute');
+	let availableAIProviders = $state(medicalAIManager.getAvailableProviders());
 
 	// Initialize services on mount
 	onMount(async () => {
@@ -101,7 +105,7 @@
 		}
 
 		if (!patientCase.chiefComplaint?.trim()) {
-			alert('Please enter the chief complaint');
+			console.error('Please enter the chief complaint');
 			return;
 		}
 
@@ -138,10 +142,17 @@
 			console.log('✅ Diagnostic analysis complete', result);
 		} catch (error: any) {
 			console.error('❌ Diagnostic analysis failed:', error);
-			alert(`Analysis failed: ${error.message || 'Unknown error'}`);
+			console.error(`Analysis failed: ${error.message || 'Unknown error'}`);
 		} finally {
 			isAnalyzing = false;
 		}
+	}
+
+	// AI Provider Selection
+	function selectAIProvider(provider: AIProvider) {
+		selectedAIProvider = provider;
+		medicalAIManager.setCurrentProvider(provider);
+		console.log(`🤖 Selected AI Provider: ${medicalAIManager.getProviderDisplayName(provider)}`);
 	}
 
 	// Reset form
@@ -172,6 +183,81 @@
 		analysisResults = [];
 	}
 
+	// Load demo CAD + Central Obesity case for Dr. Sarah Johnson
+	async function loadDemoCADCase() {
+		try {
+			// First, trigger wallet connection
+			if (!$walletStore.isConnected) {
+				console.log('🔗 Connecting wallet for demo...');
+				await walletManager.connect();
+
+				// Wait for wallet to be connected
+				return new Promise((resolve) => {
+					const unsubscribe = walletStore.subscribe((wallet) => {
+						if (wallet.isConnected && wallet.address) {
+							console.log('✅ Wallet connected, loading demo data...');
+							unsubscribe();
+							setTimeout(() => {
+								loadDemoData();
+								resolve(true);
+							}, 1000); // Give a moment for UI to update
+						}
+					});
+				});
+			} else {
+				// Wallet already connected, load demo data immediately
+				loadDemoData();
+			}
+		} catch (error) {
+			console.error('Failed to connect wallet:', error);
+		}
+	}
+
+	// Separate function to load the actual demo data
+	function loadDemoData() {
+		patientCase = {
+			chiefComplaint: 'Chest discomfort and fatigue during exercise, despite normal BMI',
+			symptoms: [
+				'Central chest discomfort on exertion',
+				'Fatigue with mild activity',
+				'Increased waist circumference',
+				'No chest pain at rest'
+			],
+			vitalSigns: {
+				temperature: 98.4,
+				bloodPressure: '138/88',
+				heartRate: 82,
+				respiratoryRate: 18,
+				oxygenSaturation: 97
+			},
+			demographics: {
+				age: 52,
+				gender: 'male',
+				ethnicity: 'Caucasian',
+				weight: 75, // kg - Normal BMI
+				height: 175 // cm - BMI = 24.5 (normal)
+			},
+			medicalHistory: [
+				'Type 2 diabetes mellitus (recently diagnosed)',
+				'Dyslipidemia',
+				'Central obesity (waist circumference: 98 cm)',
+				'Family history of CAD'
+			],
+			currentMedications: ['Metformin 500mg BID', 'Atorvastatin 20mg daily'],
+			allergies: ['NKDA'],
+			labResults: {
+				HbA1c: '7.2%',
+				'Total Cholesterol': '245 mg/dL',
+				LDL: '165 mg/dL',
+				HDL: '38 mg/dL',
+				Triglycerides: '210 mg/dL',
+				CRP: '3.8 mg/L (elevated)'
+			},
+			urgency: 'routine'
+		};
+		console.log('📋 Loaded demo CAD + Central Obesity case for analysis');
+	}
+
 	/**
 	 * Navigate to consultation page with pre-filled case data
 	 */
@@ -179,23 +265,23 @@
 		try {
 			console.log('🩺 Starting expert consultation request...');
 
-		// Convert analysis result back to medical case format for consultation
-		const consultationCase = {
-			id: analysisResult.case?.id || `case_${Date.now()}`,
-			patientId: analysisResult.case?.patientId || `P-${Date.now()}`,
-			hospitalId: analysisResult.case?.hospitalId || 'current_institution',
-			symptoms: analysisResult.case?.symptoms || [],
-			duration: '2 weeks', // Default, could be extracted from case
-			previousTreatments: analysisResult.case?.medicalHistory || [],
-			diagnosticTests: [],
-			urgency: (analysisResult.case?.urgency as 'routine' | 'urgent' | 'emergency') || 'routine',
-			specialty: analysisResult.case?.specialty || 'Internal Medicine',
-			description: analysisResult.case?.chiefComplaint || 'Analysis case',
-			demographics: {
-				age: analysisResult.case?.demographics?.age || 0,
-				gender: analysisResult.case?.demographics?.gender || 'other'
-			}
-		};			// Store the case and analysis for the consultation page
+			// Convert analysis result back to medical case format for consultation
+			const consultationCase = {
+				id: analysisResult.case?.id || `case_${Date.now()}`,
+				patientId: analysisResult.case?.patientId || `P-${Date.now()}`,
+				hospitalId: analysisResult.case?.hospitalId || 'current_institution',
+				symptoms: analysisResult.case?.symptoms || [],
+				duration: '2 weeks', // Default, could be extracted from case
+				previousTreatments: analysisResult.case?.medicalHistory || [],
+				diagnosticTests: [],
+				urgency: (analysisResult.case?.urgency as 'routine' | 'urgent' | 'emergency') || 'routine',
+				specialty: analysisResult.case?.specialty || 'Internal Medicine',
+				description: analysisResult.case?.chiefComplaint || 'Analysis case',
+				demographics: {
+					age: analysisResult.case?.demographics?.age || 0,
+					gender: analysisResult.case?.demographics?.gender || 'other'
+				}
+			}; // Store the case and analysis for the consultation page
 			sessionStorage.setItem('pendingConsultationCase', JSON.stringify(consultationCase));
 			sessionStorage.setItem('aiAnalysisResult', JSON.stringify(analysisResult));
 
@@ -211,7 +297,10 @@
 	 * View similar cases (placeholder for future implementation)
 	 */
 	function viewRelatedCases(analysisResult: PatternAnalysisResult) {
-		console.log('🔍 Viewing related cases for:', analysisResult.case?.chiefComplaint || 'Unknown case');
+		console.log(
+			'🔍 Viewing related cases for:',
+			analysisResult.case?.chiefComplaint || 'Unknown case'
+		);
 
 		// For now, show a simple alert with case information
 		const patterns =
@@ -275,6 +364,50 @@ For now, you can request an expert consultation to discuss similar cases.`);
 						>
 							Clear Form
 						</button>
+					</div>
+
+					<!-- AI Provider Selection -->
+					<div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+						<h3 class="text-sm font-medium text-gray-900 mb-3">🤖 AI Analysis Provider</h3>
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+							{#each availableAIProviders as provider}
+								<button
+									onclick={() => selectAIProvider(provider.provider)}
+									class="p-3 border rounded-lg text-left transition-all duration-200 {selectedAIProvider ===
+									provider.provider
+										? 'border-blue-500 bg-blue-100 shadow-sm'
+										: provider.available
+											? 'border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50'
+											: 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'}"
+									disabled={!provider.available}
+								>
+									<div class="flex items-center justify-between mb-1">
+										<span
+											class="font-medium text-sm {provider.available
+												? 'text-gray-900'
+												: 'text-gray-500'}"
+										>
+											{provider.displayName}
+										</span>
+										{#if selectedAIProvider === provider.provider}
+											<span class="text-blue-600 text-xs">✓ Selected</span>
+										{:else if !provider.configured}
+											<span class="text-orange-500 text-xs">⚠️ Config</span>
+										{:else if !provider.available}
+											<span class="text-red-500 text-xs">✗ Unavailable</span>
+										{/if}
+									</div>
+									<p class="text-xs {provider.available ? 'text-gray-600' : 'text-gray-400'}">
+										{provider.description}
+									</p>
+								</button>
+							{/each}
+						</div>
+						{#if selectedAIProvider}
+							<p class="mt-2 text-xs text-blue-600">
+								Current: {medicalAIManager.getProviderDisplayName(selectedAIProvider)}
+							</p>
+						{/if}
 					</div>
 
 					<!-- Chief Complaint -->
@@ -538,19 +671,30 @@ For now, you can request an expert consultation to discuss similar cases.`);
 								<div class="border rounded-lg p-4 bg-gray-50">
 									<div class="mb-3">
 										<div class="flex items-center justify-between mb-2">
-											<h3 class="font-semibold text-gray-900">Diagnostic Analysis</h3>
+											<div>
+												<h3 class="font-semibold text-gray-900">Diagnostic Analysis</h3>
+												{#if result.aiProvider}
+													<span
+														class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full"
+													>
+														🤖 {medicalAIManager.getProviderDisplayName(result.aiProvider as any)}
+													</span>
+												{/if}
+											</div>
 											<span class="text-2xl font-bold text-green-600">
-												{result.confidenceScore.toFixed(1)}%
+												{(result.confidenceScore || result.confidence || 0).toFixed(1)}%
 											</span>
 										</div>
-										<p class="text-sm text-gray-600">{result.case.chiefComplaint}</p>
+										<p class="text-sm text-gray-600">
+											{result.case?.chiefComplaint || patientCase.chiefComplaint || 'Case Analysis'}
+										</p>
 									</div>
 
-									{#if result.identifiedPatterns?.length > 0}
+									{#if ((result.identifiedPatterns || result.patterns) ?? []).length > 0}
 										<div class="mb-4">
 											<h4 class="font-medium text-gray-900 mb-2 text-sm">🔍 Identified Patterns</h4>
 											<div class="space-y-2">
-												{#each result.identifiedPatterns as pattern}
+												{#each result.identifiedPatterns || result.patterns || [] as pattern}
 													<div class="bg-white p-2 rounded border text-sm">
 														<div class="flex items-center justify-between mb-1">
 															<span class="font-medium capitalize">
@@ -561,19 +705,31 @@ For now, you can request an expert consultation to discuss similar cases.`);
 															</span>
 														</div>
 														<p class="text-xs text-gray-600">{pattern.description}</p>
+														{#if pattern.recommendedActions?.length > 0}
+															<div class="mt-1">
+																<div class="text-xs text-gray-500 font-medium">
+																	Recommendations:
+																</div>
+																<ul class="text-xs text-gray-600 ml-2">
+																	{#each pattern.recommendedActions as action}
+																		<li>• {action}</li>
+																	{/each}
+																</ul>
+															</div>
+														{/if}
 													</div>
 												{/each}
 											</div>
 										</div>
 									{/if}
 
-									{#if result.recommendedDifferentials?.length > 0}
+									{#if (result.recommendedDifferentials ?? []).length > 0}
 										<div class="mb-4">
 											<h4 class="font-medium text-gray-900 mb-2 text-sm">
 												🎯 Differential Diagnoses
 											</h4>
 											<ul class="text-sm text-gray-700 space-y-1">
-												{#each result.recommendedDifferentials.slice(0, 5) as diagnosis}
+												{#each (result.recommendedDifferentials ?? []).slice(0, 5) as diagnosis}
 													<li class="flex items-center gap-2">
 														<span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
 														{diagnosis}
@@ -583,11 +739,11 @@ For now, you can request an expert consultation to discuss similar cases.`);
 										</div>
 									{/if}
 
-									{#if result.suggestedTests?.length > 0}
+									{#if (result.suggestedTests ?? []).length > 0}
 										<div>
 											<h4 class="font-medium text-gray-900 mb-2 text-sm">🧪 Suggested Tests</h4>
 											<ul class="text-sm text-gray-700 space-y-1">
-												{#each result.suggestedTests.slice(0, 4) as test}
+												{#each (result.suggestedTests ?? []).slice(0, 4) as test}
 													<li class="flex items-center gap-2">
 														<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
 														{test}
@@ -677,9 +833,8 @@ For now, you can request an expert consultation to discuss similar cases.`);
 															<div class="mt-3 pt-3 border-t border-blue-200">
 																<p class="text-xs text-blue-700 mb-2">
 																	<strong>AI Analysis Ready:</strong>
-																	{(result.identifiedPatterns ?? []).length} patterns identified with {(result.confidenceScore ?? 0).toFixed(
-																		1
-																	)}% confidence
+																	{(result.identifiedPatterns ?? []).length} patterns identified with
+																	{(result.confidenceScore ?? 0).toFixed(1)}% confidence
 																</p>
 																<div class="flex flex-wrap gap-1">
 																	{#each (result.identifiedPatterns ?? []).slice(0, 3) as pattern}

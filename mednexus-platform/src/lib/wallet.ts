@@ -26,7 +26,7 @@ console.log('Wallet: Store initialized');
 
 // 0G Chain configuration
 const ogChain = {
-	id: 16601,
+	id: 16602,
 	name: '0G-Newton-Testnet',
 	network: '0g-testnet',
 	nativeCurrency: {
@@ -179,7 +179,7 @@ class WalletManager {
 	isOnOGChain(): boolean {
 		let isOnCorrectChain = false;
 		walletStore.subscribe(state => {
-			isOnCorrectChain = state.chainId === 16601;
+			isOnCorrectChain = state.chainId === 16602;
 		})();
 		return isOnCorrectChain;
 	}

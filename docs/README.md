@@ -39,3 +39,26 @@ GIT_USER=<Your GitHub username> yarn deploy
 ```
 
 If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+
+## 📚 Documentation for Reviewers
+
+MedNexus has comprehensive real-world usability documentation to help reviewers validate the platform in 30 minutes:
+
+### Quick Links
+
+- 🎯 **[Executive Summary](REVIEWER_EXECUTIVE_SUMMARY.md)** - Start here! 10-minute overview of problem, solution, and what's built
+- ✅ **[Quick Reference](REVIEWER_QUICK_REFERENCE.md)** - 30-minute hands-on testing checklist (5 demos)
+- 🎬 **[Demo Script](DEMO_SCRIPT.md)** - Live presentation script with Q&A preparation
+- 📘 **[Complete Demo Guide](docs/overview/real-world-usability-demo.md)** - Detailed technical walkthrough
+- 📊 **[Visual Demo Flow](VISUAL_DEMO_FLOW.md)** - Printable diagrams and architecture
+- 📋 **[Documentation Index](DOCUMENTATION_INDEX.md)** - How to use all these documents
+
+### What Reviewers Can Validate
+
+✅ Real blockchain transactions (0G testnet)  
+✅ Real decentralized storage (0G Storage)  
+✅ Real database operations (Supabase, no mocks)  
+✅ Real smart contracts (deployed, open-source)  
+✅ Real multi-institutional architecture
+
+**Total demo time: 30 minutes** | **Verified transactions: Public block explorer**

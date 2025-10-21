@@ -1,430 +1,441 @@
--- =====================================================
--- MEDNEXUS: Institution Registration Schema
--- Minimal schema for blockchain-first registration
--- =====================================================
+create table public.medical_institutions (
+  id character varying(100) not null,
+  name character varying(255) not null,
+  country character varying(100) not null,
+  address text null,
+  license_number character varying(100) not null,
+  license_prefix character varying(10) null,
+  accreditation text null,
+  phone character varying(50) null,
+  email character varying(255) null,
+  emergency_contact character varying(50) null,
+  wallet_address character varying(42) null,
+  transaction_hash character varying(66) null,
+  blockchain_registered boolean null default false,
+  verified_by character varying(42) null,
+  verification_date timestamp with time zone null,
+  departments jsonb null default '[]'::jsonb,
+  region character varying(50) null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint medical_institutions_pkey primary key (id)
+) TABLESPACE pg_default;
 
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+create index IF not exists idx_institutions_license_prefix on public.medical_institutions using btree (license_prefix) TABLESPACE pg_default;
 
--- =====================================================
--- MEDICAL INSTITUTIONS TABLE
--- =====================================================
+create index IF not exists idx_institutions_country on public.medical_institutions using btree (country) TABLESPACE pg_default;
 
-CREATE TABLE medical_institutions (
-    -- Primary identifiers
-    id VARCHAR(100) PRIMARY KEY, -- Auto-generated like 'st-marys-london'
-    name VARCHAR(255) NOT NULL,
-    
-    -- Location
-    country VARCHAR(100) NOT NULL,
-    address TEXT,
-    
-    -- Medical licensing
-    license_number VARCHAR(100) NOT NULL, -- e.g., 'UK-NHS-007842'
-    license_prefix VARCHAR(10), -- Extracted prefix like 'UK-NHS'
-    accreditation TEXT,
-    
-    -- Contact information
-    phone VARCHAR(50),
-    email VARCHAR(255),
-    emergency_contact VARCHAR(50),
-    
-    -- Blockchain integration (added after successful blockchain registration)
-    wallet_address VARCHAR(42), -- Ethereum wallet address
-    transaction_hash VARCHAR(66), -- Transaction hash from blockchain registration
-    blockchain_registered BOOLEAN DEFAULT FALSE,
-    
-    -- Verification status (you handle manually)
-    verified_by VARCHAR(42), -- Verifier wallet address
-    verification_date TIMESTAMPTZ,
-    
-    -- Departments (JSON array for flexibility)
-    departments JSONB DEFAULT '[]', -- e.g., ["Emergency Medicine", "Cardiology"]
-    
-    -- Metadata
-    region VARCHAR(50),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+create index IF not exists idx_institutions_wallet on public.medical_institutions using btree (wallet_address) TABLESPACE pg_default;
 
--- Indexes for performance
-CREATE INDEX idx_institutions_license_prefix ON medical_institutions(license_prefix);
-CREATE INDEX idx_institutions_country ON medical_institutions(country);
-CREATE INDEX idx_institutions_wallet ON medical_institutions(wallet_address);
+create index IF not exists idx_institutions_blockchain on public.medical_institutions using btree (blockchain_registered) TABLESPACE pg_default;
 
-CREATE INDEX idx_institutions_blockchain ON medical_institutions(blockchain_registered);
+create trigger update_institutions_updated_at BEFORE
+update on medical_institutions for EACH row
+execute FUNCTION update_updated_at_column ();
 
--- =====================================================
--- AUTO-UPDATE TIMESTAMPS
--- =====================================================
+create trigger auto_license_prefix BEFORE INSERT
+or
+update on medical_institutions for EACH row
+execute FUNCTION auto_extract_license_prefix ();
 
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- ============================================================================
+-- WAVE 4: CLINICAL TRIALS TABLES
+-- ============================================================================
 
-CREATE TRIGGER update_institutions_updated_at 
-    BEFORE UPDATE ON medical_institutions 
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+-- Clinical Trials Table
+create table public.clinical_trials (
+  trial_id character varying(100) not null,
+  protocol_number character varying(50) not null unique,
+  title text not null,
+  short_title text null,
+  phase character varying(20) not null check (phase in ('phase_1', 'phase_2', 'phase_3', 'phase_4')),
+  status character varying(20) not null default 'planning' check (status in ('planning', 'recruiting', 'active', 'completed', 'suspended', 'terminated')),
+  
+  -- Medical details
+  condition text not null,
+  intervention jsonb not null, -- {type, name, description}
+  objectives text null,
+  
+  -- Principal Investigator
+  principal_investigator jsonb not null, -- {name, institution, credentials, walletAddress}
+  
+  -- Sponsor
+  sponsor jsonb null, -- {name, institutionId, contactPerson, email}
+  
+  -- Eligibility criteria
+  eligibility jsonb not null, -- {minAge, maxAge, gender, inclusionCriteria, exclusionCriteria, requiredDiagnoses}
+  
+  -- Trial design
+  design jsonb null, -- {studyType, allocation, primaryPurpose, masking, enrollmentTarget, numberOfArms}
+  
+  -- Timeline
+  timeline jsonb not null, -- {startDate, estimatedCompletionDate, primaryCompletionDate}
+  
+  -- Outcomes
+  outcomes jsonb null, -- {primary, secondary, safetyMeasures}
+  
+  -- Enrollment stats
+  enrollment jsonb not null default '{"total": 0, "screened": 0, "randomized": 0, "completed": 0, "withdrawn": 0, "currentByCountry": {}}'::jsonb,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {protocolHash, ethicsApprovalHashes, verified}
+  
+  -- Regulatory
+  regulatory jsonb null, -- {irbApproved, dataMonitoringCommittee, localApprovals}
+  
+  -- Funding
+  funding jsonb not null, -- {totalBudget, currency, source, perPatientCost}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint clinical_trials_pkey primary key (trial_id)
+) TABLESPACE pg_default;
 
--- =====================================================
--- FUNCTION TO EXTRACT LICENSE PREFIX
--- =====================================================
+-- Trial Sites Table (many-to-one with clinical_trials)
+create table public.trial_sites (
+  site_id character varying(100) not null,
+  trial_id character varying(100) not null,
+  institution_id character varying(100) null,
+  institution_name text not null,
+  location text not null,
+  country character varying(100) not null,
+  principal_investigator text not null,
+  status character varying(20) not null default 'pending' check (status in ('pending', 'active', 'suspended', 'closed')),
+  
+  -- Enrollment
+  enrollment_target integer not null,
+  current_enrollment integer not null default 0,
+  
+  -- Contact info
+  contact_info jsonb not null, -- {email, phone, address}
+  
+  -- IRB approval
+  irb_approval jsonb not null, -- {approved, approvalDate, expirationDate, irbName, protocolNumber}
+  
+  -- Metadata
+  last_updated timestamp with time zone not null default now(),
+  created_at timestamp with time zone not null default now(),
+  
+  constraint trial_sites_pkey primary key (site_id),
+  constraint trial_sites_trial_fkey foreign key (trial_id) references clinical_trials(trial_id) on delete cascade
+) TABLESPACE pg_default;
 
-CREATE OR REPLACE FUNCTION extract_license_prefix(license_number TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    -- Extract prefix before the last hyphen
-    -- UK-NHS-007842 -> UK-NHS
-    -- CA-HOSP-123456 -> CA-HOSP
-    -- US-STATE-789012 -> US-STATE
-    
-    IF license_number ~ '^[A-Z]{2,3}-[A-Z]{2,4}-' THEN
-        RETURN SUBSTRING(license_number FROM '^([A-Z]{2,3}-[A-Z]{2,4})');
-    ELSE
-        -- Fallback: just take first part before hyphen
-        RETURN SPLIT_PART(license_number, '-', 1);
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
+-- Indexes for clinical_trials
+create index idx_trials_protocol_number on public.clinical_trials using btree (protocol_number) TABLESPACE pg_default;
+create index idx_trials_status on public.clinical_trials using btree (status) TABLESPACE pg_default;
+create index idx_trials_phase on public.clinical_trials using btree (phase) TABLESPACE pg_default;
+create index idx_trials_condition on public.clinical_trials using btree (condition) TABLESPACE pg_default;
 
--- =====================================================
--- TRIGGER TO AUTO-EXTRACT LICENSE PREFIX
--- =====================================================
+-- Indexes for trial_sites
+create index idx_trial_sites_trial_id on public.trial_sites using btree (trial_id) TABLESPACE pg_default;
+create index idx_trial_sites_status on public.trial_sites using btree (status) TABLESPACE pg_default;
+create index idx_trial_sites_country on public.trial_sites using btree (country) TABLESPACE pg_default;
 
-CREATE OR REPLACE FUNCTION auto_extract_license_prefix()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.license_prefix = extract_license_prefix(NEW.license_number);
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Trigger to update updated_at
+create trigger update_clinical_trials_updated_at BEFORE update on clinical_trials for each row execute function update_updated_at_column();
 
-CREATE TRIGGER auto_license_prefix 
-    BEFORE INSERT OR UPDATE ON medical_institutions 
-    FOR EACH ROW EXECUTE PROCEDURE auto_extract_license_prefix();
+-- ============================================================================
+-- WAVE 4: RESEARCH COLLABORATION TABLES
+-- ============================================================================
 
--- =====================================================
--- ROW LEVEL SECURITY
--- =====================================================
+-- Research Collaborations Table
+create table public.research_collaborations (
+  collaboration_id character varying(100) not null,
+  title text not null,
+  type character varying(50) not null check (type in ('observational_study', 'registry_study', 'meta_analysis', 'systematic_review', 'case_series')),
+  status character varying(20) not null default 'planning' check (status in ('planning', 'ethics_review', 'active', 'analysis', 'publication', 'completed')),
+  
+  -- Research details
+  research_question text not null,
+  objectives text[] not null,
+  methodology text not null,
+  
+  -- Lead Institution
+  lead_institution jsonb not null, -- {institutionId, institutionName, country, piWallet, piName}
+  
+  -- Collaborating Institutions
+  collaborating_institutions jsonb not null default '[]'::jsonb,
+  
+  -- Timeline
+  timeline jsonb not null, -- {startDate, estimatedCompletionDate, ethicsSubmissionDate}
+  
+  -- Funding
+  funding jsonb not null, -- {totalBudget, currency, sources}
+  
+  -- Data sharing
+  data_sharing jsonb not null default '{"policy": "restricted", "embargoUntil": null, "dataAvailability": "upon_request"}'::jsonb,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {protocolHash, ethicsHashes, publicationDOIs}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint research_collaborations_pkey primary key (collaboration_id)
+) TABLESPACE pg_default;
 
-ALTER TABLE medical_institutions ENABLE ROW LEVEL SECURITY;
+-- Research Datasets Table
+create table public.research_datasets (
+  dataset_id character varying(100) not null,
+  collaboration_id character varying(100) not null,
+  name text not null,
+  description text not null,
+  data_type character varying(50) not null,
+  
+  -- Storage info
+  storage jsonb not null, -- {storageLocation, size, format, accessLevel}
+  
+  -- Quality metrics
+  completeness decimal not null default 0,
+  quality_score decimal not null default 0,
+  
+  -- Metadata
+  uploaded_at timestamp with time zone not null default now(),
+  
+  constraint research_datasets_pkey primary key (dataset_id),
+  constraint research_datasets_collaboration_fkey foreign key (collaboration_id) references research_collaborations(collaboration_id) on delete cascade
+) TABLESPACE pg_default;
 
--- Allow public read access (institutions can be public)
-CREATE POLICY "Public read access" ON medical_institutions FOR SELECT USING (true);
+-- Ethics Approvals Table
+create table public.ethics_approvals (
+  approval_id character varying(100) not null,
+  collaboration_id character varying(100) not null,
+  committee_name text not null,
+  institution_id character varying(100) not null,
+  
+  -- Approval details
+  approval_number text not null,
+  approval_date timestamp with time zone not null,
+  expiration_date timestamp with time zone not null,
+  status character varying(20) not null check (status in ('pending', 'approved', 'conditional', 'rejected', 'expired')),
+  
+  -- Documents
+  documents jsonb not null default '[]'::jsonb,
+  
+  -- Conditions
+  conditions text[] null,
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  
+  constraint ethics_approvals_pkey primary key (approval_id),
+  constraint ethics_approvals_collaboration_fkey foreign key (collaboration_id) references research_collaborations(collaboration_id) on delete cascade
+) TABLESPACE pg_default;
 
--- Allow authenticated users to insert (registration)
-CREATE POLICY "Allow registration" ON medical_institutions FOR INSERT WITH CHECK (true);
+-- Research Publications Table
+create table public.research_publications (
+  publication_id character varying(100) not null,
+  collaboration_id character varying(100) null,
+  title text not null,
+  authors jsonb not null, -- Array of {name, affiliation, contributorRole}
+  
+  -- Publication details
+  journal text not null,
+  doi text null unique,
+  publication_date timestamp with time zone not null,
+  status character varying(20) not null check (status in ('draft', 'submitted', 'under_review', 'accepted', 'published', 'rejected')),
+  
+  -- Metrics
+  citations integer not null default 0,
+  impact_factor decimal null,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {publicationHash, peerReviewHashes}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  
+  constraint research_publications_pkey primary key (publication_id),
+  constraint research_publications_collaboration_fkey foreign key (collaboration_id) references research_collaborations(collaboration_id) on delete set null
+) TABLESPACE pg_default;
 
--- Allow updates to own records (for blockchain data updates)
-CREATE POLICY "Allow updates" ON medical_institutions FOR UPDATE USING (true);
+-- Indexes for research_collaborations
+create index idx_research_collaborations_type on public.research_collaborations using btree (type) TABLESPACE pg_default;
+create index idx_research_collaborations_status on public.research_collaborations using btree (status) TABLESPACE pg_default;
 
--- =====================================================
--- SAMPLE DATA (based on your demo structure)
--- =====================================================
+-- Indexes for research_datasets
+create index idx_research_datasets_collaboration_id on public.research_datasets using btree (collaboration_id) TABLESPACE pg_default;
 
--- Insert one sample institution to test the structure
-INSERT INTO medical_institutions (
-    id,
-    name,
-    country,
-    address,
-    license_number,
-    accreditation,
-    phone,
-    email,
-    emergency_contact,
-    departments,
-    region
-) VALUES (
-    'st-marys-london',
-    'St. Mary''s Hospital London',
-    'United Kingdom',
-    'Praed Street, Paddington, London W2 1NY, UK',
-    'UK-NHS-007842',
-    'CQC Outstanding, UKAS',
-    '+44 20 3312 6666',
-    'enquiries@stmarys.nhs.uk',
-    '+44 20 3312 6000',
-    '["Accident & Emergency", "Cardiothoracic Surgery", "Neurology", "Oncology", "General Surgery", "Radiology", "Intensive Care", "Paediatrics"]',
-    'Europe'
-);
+-- Indexes for ethics_approvals
+create index idx_ethics_approvals_collaboration_id on public.ethics_approvals using btree (collaboration_id) TABLESPACE pg_default;
+create index idx_ethics_approvals_status on public.ethics_approvals using btree (status) TABLESPACE pg_default;
 
--- =====================================================
--- USEFUL QUERIES
--- =====================================================
+-- Indexes for research_publications
+create index idx_research_publications_collaboration_id on public.research_publications using btree (collaboration_id) TABLESPACE pg_default;
+create index idx_research_publications_doi on public.research_publications using btree (doi) TABLESPACE pg_default;
 
--- Get institutions by license prefix (for verification matching)
--- SELECT * FROM medical_institutions WHERE license_prefix = 'UK-NHS';
+-- Triggers
+create trigger update_research_collaborations_updated_at BEFORE update on research_collaborations for each row execute function update_updated_at_column();
 
--- Get blockchain-registered institutions
--- SELECT * FROM medical_institutions WHERE blockchain_registered = true;
+-- ============================================================================
+-- WAVE 5: INNOVATION MARKETPLACE TABLES
+-- ============================================================================
 
--- Get institutions pending verification
+-- Patents Table
+create table public.patents (
+  patent_id character varying(100) not null,
+  title text not null,
+  innovation_type character varying(50) not null check (innovation_type in ('drug', 'device', 'diagnostic', 'software', 'process', 'composition')),
+  
+  -- Innovation details
+  innovation jsonb not null, -- {type, category, description, technicalDetails, advantages}
+  
+  -- Inventors
+  inventors jsonb not null, -- Array of {name, affiliation, contributorRole}
+  
+  -- Owner
+  owner jsonb not null, -- {institutionId, institutionName, department, contactEmail}
+  
+  -- Filing details
+  filing jsonb not null, -- {status, filingDate, grantDate, jurisdictions, applicationNumber, patentNumber}
+  
+  -- Commercial details
+  commercial jsonb not null, -- {readinessLevel, marketPotential, targetMarkets, competitorAnalysis, valuationEstimate}
+  
+  -- Prior art
+  prior_art jsonb not null default '{"searchConducted": false, "references": []}'::jsonb,
+  
+  -- Licensing terms
+  licensing jsonb not null default '{"available": false, "terms": "negotiable", "exclusivity": "non_exclusive", "royaltyRate": 0}'::jsonb,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {ipHash, filingHash, verified}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint patents_pkey primary key (patent_id)
+) TABLESPACE pg_default;
 
+-- Licensing Agreements Table
+create table public.licensing_agreements (
+  agreement_id character varying(100) not null,
+  patent_id character varying(100) not null,
+  
+  -- Parties
+  licensor jsonb not null, -- {institutionId, institutionName, representative, walletAddress}
+  licensee jsonb not null, -- {name, type, representative, walletAddress}
+  
+  -- Agreement terms
+  terms jsonb not null, -- {exclusivity, territory, field, duration, extensionOptions}
+  
+  -- Financial terms
+  financial jsonb not null, -- {upfrontFee, royaltyRate, minimumRoyalty, milestonePayments, totalRevenueGenerated}
+  
+  -- Status
+  status character varying(20) not null check (status in ('negotiation', 'active', 'suspended', 'terminated', 'expired')),
+  
+  -- Dates
+  effective_date timestamp with time zone not null,
+  expiration_date timestamp with time zone not null,
+  
+  -- Compliance
+  compliance jsonb not null default '{"lastAudit": null, "nextAudit": null, "reportingSchedule": "quarterly"}'::jsonb,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {agreementHash, paymentHashes}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint licensing_agreements_pkey primary key (agreement_id),
+  constraint licensing_agreements_patent_fkey foreign key (patent_id) references patents(patent_id) on delete cascade
+) TABLESPACE pg_default;
 
--- =====================================================
--- COMMENTS FOR DOCUMENTATION
--- =====================================================
+-- Drug Discovery Projects Table
+create table public.drug_discovery_projects (
+  project_id character varying(100) not null,
+  name text not null,
+  therapeutic_area character varying(100) not null,
+  status character varying(20) not null check (status in ('target_identification', 'lead_discovery', 'lead_optimization', 'preclinical', 'clinical', 'approved', 'discontinued')),
+  
+  -- Target details
+  target jsonb not null, -- {name, type, description, validation, therapeuticHypothesis}
+  
+  -- Lead institution
+  lead_institution jsonb not null, -- {institutionId, institutionName, department, piName}
+  
+  -- Collaborators
+  collaborators jsonb not null default '[]'::jsonb,
+  
+  -- Funding
+  funding jsonb not null, -- {totalBudget, currency, sources, grantNumbers}
+  
+  -- Timeline
+  timeline jsonb not null, -- {startDate, currentPhase, estimatedCompletion, milestones}
+  
+  -- Compounds
+  compounds_count integer not null default 0,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {projectHash, dataHashes}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint drug_discovery_projects_pkey primary key (project_id)
+) TABLESPACE pg_default;
 
-COMMENT ON TABLE medical_institutions IS 'Medical institutions with blockchain-first registration';
-COMMENT ON COLUMN medical_institutions.id IS 'Auto-generated ID like st-marys-london';
-COMMENT ON COLUMN medical_institutions.license_prefix IS 'Extracted prefix like UK-NHS for verification matching';
-COMMENT ON COLUMN medical_institutions.wallet_address IS 'Added after successful blockchain registration';
-COMMENT ON COLUMN medical_institutions.transaction_hash IS 'Transaction hash from blockchain registration';
-COMMENT ON COLUMN medical_institutions.blockchain_registered IS 'True only after successful blockchain transaction';
+-- Drug Compounds Table
+create table public.drug_compounds (
+  compound_id character varying(100) not null,
+  project_id character varying(100) not null,
+  name text not null,
+  chemical_name text not null,
+  
+  -- Chemical properties
+  properties jsonb not null, -- {molecularWeight, formula, structure, smiles, inchi}
+  
+  -- Development stage
+  development jsonb not null, -- {stage, startDate, leadOptimization, syntheticRoute}
+  
+  -- Efficacy data
+  efficacy jsonb not null default '{"invitro": [], "invivo": [], "clinicalTrials": []}'::jsonb,
+  
+  -- Safety profile
+  safety jsonb not null default '{"toxicology": [], "adverseEvents": [], "contraindications": []}'::jsonb,
+  
+  -- Pharmacology
+  pharmacology jsonb not null default '{"absorption": null, "distribution": null, "metabolism": null, "excretion": null, "mechanism": ""}'::jsonb,
+  
+  -- IP status
+  ip_status jsonb not null default '{"patentProtection": false, "patentId": null, "filingStatus": "none"}'::jsonb,
+  
+  -- Blockchain
+  blockchain jsonb null, -- {compoundHash, dataHashes}
+  
+  -- Metadata
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  
+  constraint drug_compounds_pkey primary key (compound_id),
+  constraint drug_compounds_project_fkey foreign key (project_id) references drug_discovery_projects(project_id) on delete cascade
+) TABLESPACE pg_default;
 
--- =====================================================
--- MEDICAL DOCTORS TABLE  
--- =====================================================
+-- Indexes for patents
+create index idx_patents_innovation_type on public.patents using btree (innovation_type) TABLESPACE pg_default;
+create index idx_patents_filing_status on public.patents using btree ((filing->>'status')) TABLESPACE pg_default;
 
-CREATE TABLE medical_doctors (
-    -- Primary identifiers
-    id VARCHAR(100) PRIMARY KEY, -- Auto-generated like 'dr-sarah-johnson-mercy'
-    name VARCHAR(255) NOT NULL,
-    
-    -- Medical credentials
-    medical_license_number VARCHAR(100) NOT NULL, -- e.g., 'CA-MD-789012'
-    license_prefix VARCHAR(10), -- Extracted prefix like 'CA-MD'
-    medical_specialty VARCHAR(255) NOT NULL, -- e.g., 'Interventional Cardiology'
-    department VARCHAR(255) NOT NULL, -- e.g., 'Cardiology'
-    years_of_experience INTEGER DEFAULT 0,
-    
-    -- Institution association (must be blockchain-verified)
-    institution_id VARCHAR(100) NOT NULL REFERENCES medical_institutions(id),
-    institution_wallet VARCHAR(42), -- Institution wallet address from blockchain
-    
-    -- Contact information
-    phone VARCHAR(50),
-    email VARCHAR(255),
-    
-    -- Blockchain integration (added after successful blockchain registration)
-    wallet_address VARCHAR(42) NOT NULL UNIQUE, -- Doctor's wallet address
-    transaction_hash VARCHAR(66), -- Transaction hash from blockchain registration
-    blockchain_registered BOOLEAN DEFAULT FALSE,
-    stake_amount DECIMAL(20,8), -- Amount staked on blockchain (0.0005 A0GI)
-    
-    -- Verification status (auto-verified on blockchain through staking)
-    verification_status VARCHAR(20) DEFAULT 'verified', -- verified (auto through stake)
-    verified_by VARCHAR(42), -- Institution wallet who verified (optional)
-    verification_date TIMESTAMPTZ,
-    
-    -- Permissions (JSON for flexibility)
-    permissions JSONB DEFAULT '{
-        "canUpload": true,
-        "canShare": true,
-        "canViewAllDepartments": false,
-        "canManageUsers": false,
-        "canUploadDepartmental": true,
-        "canUploadInstitutional": false,
-        "canPublishPublic": false,
-        "accessLevel": "doctor"
-    }',
-    
-    -- Profile information (JSON for extensibility) 
-    profile_info JSONB DEFAULT '{}', -- education, certifications, etc.
-    
-    -- Activity tracking (from smart contract)
-    consultation_count INTEGER DEFAULT 0,
-    reputation_score INTEGER DEFAULT 100,
-    last_activity TIMESTAMPTZ,
-    
-    -- Metadata
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Indexes for licensing_agreements
+create index idx_licensing_agreements_patent_id on public.licensing_agreements using btree (patent_id) TABLESPACE pg_default;
+create index idx_licensing_agreements_status on public.licensing_agreements using btree (status) TABLESPACE pg_default;
 
--- =====================================================
--- INDEXES FOR DOCTORS
--- =====================================================
+-- Indexes for drug_discovery_projects
+create index idx_drug_discovery_projects_status on public.drug_discovery_projects using btree (status) TABLESPACE pg_default;
+create index idx_drug_discovery_projects_therapeutic_area on public.drug_discovery_projects using btree (therapeutic_area) TABLESPACE pg_default;
 
-CREATE INDEX idx_doctors_wallet ON medical_doctors(wallet_address);
-CREATE INDEX idx_doctors_institution ON medical_doctors(institution_id);
-CREATE INDEX idx_doctors_license_prefix ON medical_doctors(license_prefix);
-CREATE INDEX idx_doctors_specialty ON medical_doctors(medical_specialty);
-CREATE INDEX idx_doctors_department ON medical_doctors(department);
-CREATE INDEX idx_doctors_blockchain ON medical_doctors(blockchain_registered);
-CREATE INDEX idx_doctors_verification ON medical_doctors(verification_status);
+-- Indexes for drug_compounds
+create index idx_drug_compounds_project_id on public.drug_compounds using btree (project_id) TABLESPACE pg_default;
+create index idx_drug_compounds_development_stage on public.drug_compounds using btree ((development->>'stage')) TABLESPACE pg_default;
 
--- =====================================================
--- AUTO-UPDATE TIMESTAMPS FOR DOCTORS
--- =====================================================
-
-CREATE TRIGGER update_doctors_updated_at 
-    BEFORE UPDATE ON medical_doctors 
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
--- =====================================================
--- FUNCTION TO EXTRACT DOCTOR LICENSE PREFIX
--- =====================================================
-
-CREATE OR REPLACE FUNCTION extract_doctor_license_prefix(license_number TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    -- Extract prefix from doctor license numbers
-    -- CA-MD-789012 -> CA-MD
-    -- UK-GMC-654321 -> UK-GMC  
-    -- ON-CPSO-123456 -> ON-CPSO
-    
-    IF license_number ~ '^[A-Z]{2,3}-[A-Z]{2,5}-' THEN
-        RETURN SUBSTRING(license_number FROM '^([A-Z]{2,3}-[A-Z]{2,5})');
-    ELSE
-        -- Fallback: take first two parts
-        RETURN SPLIT_PART(license_number, '-', 1) || '-' || SPLIT_PART(license_number, '-', 2);
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- =====================================================
--- TRIGGER TO AUTO-EXTRACT DOCTOR LICENSE PREFIX
--- =====================================================
-
-CREATE OR REPLACE FUNCTION auto_extract_doctor_license_prefix()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.license_prefix = extract_doctor_license_prefix(NEW.medical_license_number);
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER auto_doctor_license_prefix 
-    BEFORE INSERT OR UPDATE ON medical_doctors 
-    FOR EACH ROW EXECUTE PROCEDURE auto_extract_doctor_license_prefix();
-
--- =====================================================
--- FUNCTION TO GENERATE DOCTOR ID
--- =====================================================
-
-CREATE OR REPLACE FUNCTION generate_doctor_id(doctor_name TEXT, institution_id TEXT)
-RETURNS TEXT AS $$
-DECLARE
-    base_name TEXT;
-    institution_suffix TEXT;
-    final_id TEXT;
-    counter INTEGER := 1;
-BEGIN
-    -- Clean and format doctor name
-    base_name := LOWER(TRIM(doctor_name));
-    base_name := REGEXP_REPLACE(base_name, '[^a-z0-9\s]', '', 'g'); -- Remove special chars
-    base_name := REGEXP_REPLACE(base_name, '\s+', '-', 'g'); -- Replace spaces with hyphens
-    base_name := REGEXP_REPLACE(base_name, '^dr-?', ''); -- Remove dr prefix
-    
-    -- Get institution suffix (first part of institution_id)
-    institution_suffix := SPLIT_PART(institution_id, '-', 1);
-    
-    -- Construct base ID
-    final_id := 'dr-' || base_name || '-' || institution_suffix;
-    
-    -- Ensure uniqueness by appending number if needed
-    WHILE EXISTS (SELECT 1 FROM medical_doctors WHERE id = final_id) LOOP
-        final_id := 'dr-' || base_name || '-' || institution_suffix || '-' || counter;
-        counter := counter + 1;
-    END LOOP;
-    
-    RETURN final_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- =====================================================
--- TRIGGER TO AUTO-GENERATE DOCTOR ID
--- =====================================================
-
-CREATE OR REPLACE FUNCTION auto_generate_doctor_id()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.id IS NULL OR NEW.id = '' THEN
-        NEW.id = generate_doctor_id(NEW.name, NEW.institution_id);
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER auto_doctor_id 
-    BEFORE INSERT ON medical_doctors 
-    FOR EACH ROW EXECUTE PROCEDURE auto_generate_doctor_id();
-
--- =====================================================
--- ROW LEVEL SECURITY FOR DOCTORS
--- =====================================================
-
-ALTER TABLE medical_doctors ENABLE ROW LEVEL SECURITY;
-
--- Allow public read access to verified doctors only
-CREATE POLICY "Public read verified doctors" ON medical_doctors 
-    FOR SELECT USING (verification_status = 'verified');
-
--- Allow doctors to read their own records
-CREATE POLICY "Doctors read own records" ON medical_doctors 
-    FOR SELECT USING (wallet_address = current_setting('jwt.claims.wallet_address', true));
-
--- Allow authenticated users to insert (registration)
-CREATE POLICY "Allow doctor registration" ON medical_doctors 
-    FOR INSERT WITH CHECK (true);
-
--- Allow doctors to update their own records
-CREATE POLICY "Doctors update own records" ON medical_doctors 
-    FOR UPDATE USING (wallet_address = current_setting('jwt.claims.wallet_address', true));
-
--- =====================================================
--- SAMPLE DATA - EMPTY (to be populated through UI)
--- =====================================================
-
--- No sample data - doctors will register through the UI
-
--- =====================================================
--- VIEWS FOR COMMON QUERIES
--- =====================================================
-
--- View: Doctors with institution details
-CREATE VIEW doctors_with_institutions AS
-SELECT 
-    d.id,
-    d.name,
-    d.medical_license_number,
-    d.medical_specialty,
-    d.department,
-    d.wallet_address,
-    d.verification_status,
-    d.blockchain_registered,
-    d.years_of_experience,
-    i.name as institution_name,
-    i.country as institution_country,
-    i.license_number as institution_license,
-    d.created_at
-FROM medical_doctors d
-JOIN medical_institutions i ON d.institution_id = i.id;
-
--- View: Verified doctors only
-CREATE VIEW verified_doctors AS
-SELECT * FROM medical_doctors 
-WHERE verification_status = 'verified' AND blockchain_registered = true;
-
--- =====================================================
--- USEFUL QUERIES
--- =====================================================
-
--- Get doctors by institution
--- SELECT * FROM medical_doctors WHERE institution_id = 'mercy-general-sf';
-
--- Get doctors by specialty
--- SELECT * FROM medical_doctors WHERE medical_specialty LIKE '%Cardiology%';
-
--- Get doctor with institution details
--- SELECT * FROM doctors_with_institutions WHERE wallet_address = '0x99BD4BDD7A9c22E2a35F09A6Bd17f038D5E5eB87';
-
--- =====================================================
--- COMMENTS FOR DOCUMENTATION
--- =====================================================
-
-COMMENT ON TABLE medical_doctors IS 'Medical doctors registered through MedicalCollaborationHub smart contract';
-COMMENT ON COLUMN medical_doctors.id IS 'Auto-generated ID like dr-sarah-johnson-mercy';
-COMMENT ON COLUMN medical_doctors.wallet_address IS 'Doctor wallet address - must be unique';
-COMMENT ON COLUMN medical_doctors.institution_id IS 'References medical_institutions.id';
-COMMENT ON COLUMN medical_doctors.transaction_hash IS 'Transaction hash from blockchain registration';
-COMMENT ON COLUMN medical_doctors.blockchain_registered IS 'True only after successful blockchain transaction';
-COMMENT ON COLUMN medical_doctors.stake_amount IS 'Amount staked on blockchain (0.0005 A0GI for doctors)';
-COMMENT ON COLUMN medical_doctors.verification_status IS 'Auto-verified through blockchain staking mechanism';
-COMMENT ON COLUMN medical_doctors.permissions IS 'JSON object defining doctor permissions and access levels';
+-- Triggers
+create trigger update_patents_updated_at BEFORE update on patents for each row execute function update_updated_at_column();
+create trigger update_licensing_agreements_updated_at BEFORE update on licensing_agreements for each row execute function update_updated_at_column();
+create trigger update_drug_discovery_projects_updated_at BEFORE update on drug_discovery_projects for each row execute function update_updated_at_column();
+create trigger update_drug_compounds_updated_at BEFORE update on drug_compounds for each row execute function update_updated_at_column();

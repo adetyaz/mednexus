@@ -364,7 +364,7 @@
 		<!-- Symptoms -->
 		<div class="mb-6">
 			<div class="flex items-center justify-between mb-2">
-				<label class="block text-sm font-medium text-gray-700"> Symptoms * </label>
+				<label for="symptoms" class="block text-sm font-medium text-gray-700"> Symptoms * </label>
 				<button onclick={addSymptom} class="text-sm text-blue-600 hover:text-blue-700 font-medium">
 					+ Add Symptom
 				</button>
@@ -435,7 +435,9 @@
 		<!-- Medical History -->
 		<div class="mb-6">
 			<div class="flex items-center justify-between mb-2">
-				<label class="block text-sm font-medium text-gray-700"> Medical History </label>
+				<label for="medical-history" class="block text-sm font-medium text-gray-700">
+					Medical History
+				</label>
 				<button
 					onclick={addMedicalHistory}
 					class="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -468,7 +470,9 @@
 		<!-- Current Medications -->
 		<div class="mb-6">
 			<div class="flex items-center justify-between mb-2">
-				<label class="block text-sm font-medium text-gray-700"> Current Medications </label>
+				<label for="medications" class="block text-sm font-medium text-gray-700">
+					Current Medications
+				</label>
 				<button
 					onclick={addMedication}
 					class="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -578,24 +582,28 @@
 						<h4 class="font-semibold text-gray-900">Overall Analysis</h4>
 						<div class="flex items-center gap-3">
 							<span class="text-2xl font-bold text-blue-600"
-								>{currentAnalysis.confidenceScore.toFixed(1)}%</span
+								>{currentAnalysis.confidenceScore?.toFixed(1) || 0}%</span
 							>
-							<span
-								class={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyClass(currentAnalysis.urgencyLevel)}`}
-							>
-								{currentAnalysis.urgencyLevel.toUpperCase()}
-							</span>
+							{#if currentAnalysis.urgencyLevel}
+								<span
+									class={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyClass(currentAnalysis.urgencyLevel)}`}
+								>
+									{currentAnalysis.urgencyLevel.toUpperCase()}
+								</span>
+							{/if}
 						</div>
 					</div>
-					<p class="text-sm text-gray-600">
-						Analyzed in {currentAnalysis.analysisMetadata.processingTime}ms with {currentAnalysis.analysisMetadata.accuracyAchieved.toFixed(
-							1
-						)}% accuracy
-					</p>
+					{#if currentAnalysis.analysisMetadata}
+						<p class="text-sm text-gray-600">
+							Analyzed in {currentAnalysis.analysisMetadata.processingTime}ms with {currentAnalysis.analysisMetadata.accuracyAchieved.toFixed(
+								1
+							)}% accuracy
+						</p>
+					{/if}
 				</div>
 
 				<!-- Identified Patterns -->
-				{#if currentAnalysis.identifiedPatterns.length > 0}
+				{#if currentAnalysis.identifiedPatterns && currentAnalysis.identifiedPatterns.length > 0}
 					<div>
 						<h4 class="font-semibold text-gray-900 mb-3">🔍 Identified Patterns</h4>
 						<div class="space-y-3">
@@ -639,7 +647,7 @@
 				{/if}
 
 				<!-- Differential Diagnoses -->
-				{#if currentAnalysis.recommendedDifferentials.length > 0}
+				{#if currentAnalysis.recommendedDifferentials && currentAnalysis.recommendedDifferentials.length > 0}
 					<div>
 						<h4 class="font-semibold text-gray-900 mb-3">🎯 Differential Diagnoses</h4>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -654,7 +662,7 @@
 				{/if}
 
 				<!-- Suggested Tests -->
-				{#if currentAnalysis.suggestedTests.length > 0}
+				{#if currentAnalysis.suggestedTests && currentAnalysis.suggestedTests.length > 0}
 					<div>
 						<h4 class="font-semibold text-gray-900 mb-3">🧪 Suggested Tests</h4>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -686,25 +694,30 @@
 		<h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Analysis History</h3>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 			{#each analysisHistory.slice(0, 6) as analysis}
-				<div
-					class="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+				<button
+					class="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer w-full text-left"
 					onclick={() => (currentAnalysis = analysis)}
 				>
 					<div class="flex items-center justify-between mb-2">
-						<span class="text-sm font-medium text-gray-900">Case: {analysis.case.id.slice(-8)}</span
+						<span class="text-sm font-medium text-gray-900"
+							>Case: {analysis.case?.id?.slice(-8) || 'Unknown'}</span
 						>
 						<span class="text-sm font-bold text-blue-600"
-							>{analysis.confidenceScore.toFixed(1)}%</span
+							>{analysis.confidenceScore?.toFixed(1) || 0}%</span
 						>
 					</div>
-					<p class="text-xs text-gray-600 mb-2 line-clamp-2">{analysis.case.chiefComplaint}</p>
+					<p class="text-xs text-gray-600 mb-2 line-clamp-2">
+						{analysis.case?.chiefComplaint || 'No complaint'}
+					</p>
 					<div class="flex items-center justify-between text-xs">
-						<span class="text-gray-500">{analysis.identifiedPatterns.length} patterns</span>
-						<span class={`px-2 py-1 rounded ${getUrgencyClass(analysis.urgencyLevel)}`}>
-							{analysis.urgencyLevel}
-						</span>
+						<span class="text-gray-500">{analysis.identifiedPatterns?.length || 0} patterns</span>
+						{#if analysis.urgencyLevel}
+							<span class={`px-2 py-1 rounded ${getUrgencyClass(analysis.urgencyLevel)}`}>
+								{analysis.urgencyLevel}
+							</span>
+						{/if}
 					</div>
-				</div>
+				</button>
 			{/each}
 		</div>
 	</div>

@@ -100,7 +100,13 @@
 	const availableDepartments = $derived.by(() => {
 		if (!selectedInstitutionId) return [];
 		const institution = institutions.find((inst) => inst.id === selectedInstitutionId);
-		return institution?.departments || [];
+		const deps = institution?.departments || [];
+
+		// Handle both string and object formats
+		return deps.map((dept: any) => {
+			if (typeof dept === 'string') return dept;
+			return dept.name || dept.id || dept;
+		});
 	});
 </script>
 
@@ -364,19 +370,23 @@
 								<span class="text-xs font-medium text-green-700">Verified</span>
 								<div class="w-2 h-2 bg-green-500 rounded-full"></div>
 							</div>
-							<div class="text-sm text-gray-700">
-								<strong class="font-medium">Departments:</strong>
-								<ul class="mt-1 pl-4 space-y-1">
-									{#each institution.departments.slice(0, 3) as dept}
-										<li class="text-xs">• {dept}</li>
-									{/each}
-									{#if institution.departments.length > 3}
-										<li class="text-xs text-gray-500">
-											• +{institution.departments.length - 3} more
-										</li>
-									{/if}
-								</ul>
-							</div>
+							{#if institution.departments && institution.departments.length > 0}
+								<div class="text-sm text-gray-700">
+									<strong class="font-medium">Departments:</strong>
+									<ul class="mt-1 pl-4 space-y-1">
+										{#each institution.departments.slice(0, 3) as dept}
+											<li class="text-xs">
+												• {typeof dept === 'string' ? dept : dept.name || dept}
+											</li>
+										{/each}
+										{#if institution.departments.length > 3}
+											<li class="text-xs text-gray-500">
+												• +{institution.departments.length - 3} more
+											</li>
+										{/if}
+									</ul>
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>

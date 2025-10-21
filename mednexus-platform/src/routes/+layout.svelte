@@ -12,7 +12,6 @@
 	// Mobile menu state
 	let mobileMenuOpen = $state(false);
 
-	
 	// Dashboard navigation items (shown when wallet is connected)
 	const dashboardNavItems = [
 		{
@@ -101,7 +100,7 @@
 					>
 						🩺 Diagnostics
 					</a>
-					
+
 					<!-- Dashboard Section -->
 					{#if dashboardItems.length > 0}
 						<div class="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
@@ -124,23 +123,7 @@
 				<!-- User & Wallet Section -->
 				<div class="flex items-center space-x-4">
 					<div class="flex items-center">
-						{#if $walletStore.isConnected}
-							<div
-								class="flex items-center space-x-2 bg-green-50 border border-green-200 px-3 py-2 rounded-lg"
-							>
-								<span class="flex h-2 w-2">
-									<span
-										class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"
-									></span>
-									<span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-								</span>
-								<span class="text-sm font-mono text-green-700">
-									{$walletStore.address?.slice(0, 6)}...{$walletStore.address?.slice(-4)}
-								</span>
-							</div>
-						{:else}
-							<WalletConnect />
-						{/if}
+						<WalletConnect />
 					</div>
 
 					<!-- Mobile menu button -->
@@ -242,7 +225,6 @@
 						>
 							🩺 Diagnostic Center
 						</a>
-					
 
 						<!-- Dashboard links -->
 						{#if dashboardItems.length > 0}

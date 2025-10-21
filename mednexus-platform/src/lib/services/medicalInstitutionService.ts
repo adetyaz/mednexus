@@ -453,11 +453,40 @@ export class MedicalInstitutionService {
 				throw error;
 			}
 
-			return data || [];
+			// Parse departments from JSON string to array
+			const institutions = (data || []).map((institution: any) => ({
+				...institution,
+				departments: this.parseDepartments(institution.departments)
+			}));
+
+			return institutions;
 		} catch (error: any) {
 			console.error('Error fetching verified institutions:', error);
 			throw new Error(`Failed to fetch institutions: ${error.message}`);
 		}
+	}
+
+	/**
+	 * Parse departments field - handle both string and array formats
+	 */
+	private parseDepartments(departments: any): string[] {
+		if (!departments) return [];
+		
+		if (Array.isArray(departments)) {
+			return departments;
+		}
+		
+		if (typeof departments === 'string') {
+			try {
+				const parsed = JSON.parse(departments);
+				return Array.isArray(parsed) ? parsed : [];
+			} catch {
+				// If it's not valid JSON, treat it as a single department
+				return [departments];
+			}
+		}
+		
+		return [];
 	}
 
 	/**

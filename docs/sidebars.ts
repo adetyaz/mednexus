@@ -54,6 +54,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "overview/roadmap",
         "overview/wave-2",
+        "overview/real-world-usability-demo",
         "overview/weekly",
         "overview/innovation-impact",
         "overview/team",

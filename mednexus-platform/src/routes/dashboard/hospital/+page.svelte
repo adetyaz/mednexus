@@ -1,10 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { accessControl } from '$lib/services/accessControl';
-	import { patternRecognitionService } from '$lib/services/patternRecognitionService';
-	import { crossBorderConsultationService } from '$lib/services/crossBorderConsultationService';
-	import { highVolumeProcessingService } from '$lib/services/highVolumeProcessingService';
-	import { diagnosticMetricsService } from '$lib/services/diagnosticMetricsService';
 	import type {
 		HospitalDashboardData,
 		DepartmentSummary,
@@ -14,165 +9,160 @@
 	import { walletStore } from '$lib/wallet';
 	import StatsCard from '$lib/components/dashboard/StatsCard.svelte';
 	import DepartmentOverview from '$lib/components/dashboard/DepartmentOverview.svelte';
+	import DepartmentManagement from '$lib/components/dashboard/DepartmentManagement.svelte';
 	import StaffManagement from '$lib/components/dashboard/StaffManagement.svelte';
 	import ActivityFeed from '$lib/components/dashboard/ActivityFeed.svelte';
 	import DocumentList from '$lib/components/dashboard/DocumentList.svelte';
 	import ComplianceStatus from '$lib/components/dashboard/ComplianceStatus.svelte';
+	import {
+		medicalInstitutionService,
+		type Department
+	} from '$lib/services/medicalInstitutionService';
+	import { supabase } from '$lib/supabase';
 
 	let dashboardData = $state<HospitalDashboardData | null>(null);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
+	let showDepartmentModal = $state(false);
+	let currentInstitutionId = $state<string>('');
+	let currentInstitutionDepartments = $state<Department[]>([]);
 
 	onMount(() => {
-		loadDashboardData().finally(() => {
-			isLoading = false;
-		});
+		loadDashboardData();
 	});
 
 	async function loadDashboardData(): Promise<void> {
 		try {
-			const currentUser = accessControl.getCurrentUser();
-			if (!currentUser) throw new Error('User not authenticated');
+			const walletAddress = $walletStore.address;
+			if (!walletAddress) {
+				error = 'Please connect your wallet';
+				isLoading = false;
+				return;
+			}
 
-			// Load real dashboard data from 0G services
-			const [metrics, insights, networkStatus, processingMetrics] = await Promise.all([
-				diagnosticMetricsService.getDashboardMetrics(),
-				diagnosticMetricsService.getAIInsights(10),
-				highVolumeProcessingService.getNetworkStatus(),
-				highVolumeProcessingService.getServiceMetrics()
-			]);
+			// Load institution data from Supabase
+			const { data: institutions, error: instError } = (await supabase
+				.from('medical_institutions')
+				.select('*')
+				.eq('wallet_address', walletAddress)
+				.single()) as { data: any; error: any };
 
-			dashboardData = await generateHospitalDataFromServices(currentUser, {
-				metrics,
-				insights,
-				networkStatus,
-				processingMetrics
-			});
+			if (instError || !institutions) {
+				error =
+					'No institution found for this wallet address. Please ensure your wallet is registered with an institution.';
+				isLoading = false;
+				return;
+			}
+
+			currentInstitutionId = institutions.id;
+
+			// Parse departments from JSON
+			let departments = institutions.departments || [];
+
+			// Handle different department formats
+			if (typeof departments === 'string') {
+				try {
+					departments = JSON.parse(departments);
+				} catch {
+					departments = [];
+				}
+			}
+
+			// Ensure departments is an array
+			if (!Array.isArray(departments)) {
+				departments = [];
+			}
+
+			currentInstitutionDepartments = departments.map((dept: any) => ({
+				departmentId: dept.id || dept.departmentId || `dept_${Date.now()}_${Math.random()}`,
+				name: typeof dept === 'string' ? dept : dept.name || 'Unknown Department',
+				headOfDepartment: dept.head || dept.headOfDepartment,
+				specialties: Array.isArray(dept.specialties) ? dept.specialties : [],
+				doctorCount: 0
+			}));
+
+			// TODO: Load doctors when the relationship is properly defined
+			const doctors: any[] = [];
+
+			dashboardData = {
+				user: {
+					walletAddress,
+					role: {
+						id: 'admin',
+						name: 'Hospital Admin',
+						description: 'Hospital Administrator',
+						permissions: [],
+						level: 5
+					},
+					institutionId: institutions.name,
+					lastLogin: new Date(),
+					profile: {
+						name: institutions.name,
+						email: institutions.email || '',
+						licenseNumber: institutions.license_number || ''
+					},
+					isActive: true
+				},
+				stats: {
+					totalDocuments: 0,
+					documentsThisMonth: 0,
+					sharedDocuments: 0,
+					pendingApprovals: 0,
+					storageUsed: '0 GB',
+					storageLimit: '10 GB',
+					totalStaff: doctors?.length || 0,
+					activeDepartments: currentInstitutionDepartments.length,
+					totalPatients: 0,
+					complianceScore: 100
+				},
+				departments: currentInstitutionDepartments.map((dept) => ({
+					id: dept.departmentId,
+					name: dept.name,
+					staffCount: dept.doctorCount,
+					documentCount: 0,
+					activeConsultations: 0,
+					headDoctor: dept.headOfDepartment || 'TBD'
+				})),
+				staff:
+					doctors?.map((doctor) => ({
+						id: doctor.id,
+						name: doctor.name,
+						role: 'Doctor',
+						department: doctor.department,
+						status: 'active',
+						lastActivity: new Date(doctor.updated_at)
+					})) || [],
+				recentActivity: [],
+				complianceStatus: {
+					hipaa: 'compliant' as const,
+					gdpr: 'compliant' as const,
+					lastAudit: new Date(Date.now() - 2592000000),
+					nextAudit: new Date(Date.now() + 2592000000)
+				}
+			};
+
+			isLoading = false;
 		} catch (err) {
 			console.error('Failed to load dashboard data:', err);
 			error = err instanceof Error ? err.message : 'Failed to load dashboard data';
+			isLoading = false;
 		}
-	}
-
-	async function generateHospitalDataFromServices(
-		user: any,
-		serviceData: {
-			metrics: any;
-			insights: any[];
-			networkStatus: any[];
-			processingMetrics: any;
-		}
-	): Promise<HospitalDashboardData> {
-		const { metrics, insights, networkStatus, processingMetrics } = serviceData;
-
-		const departments: DepartmentSummary[] = [
-			{
-				id: 'dept_cardiology',
-				name: 'Cardiology',
-				staffCount: 12,
-				documentCount: Math.floor(metrics.totalCases * 0.3),
-				activeConsultations: metrics.activeConsultations || 8,
-				headDoctor: 'Dr. Sarah Wilson'
-			},
-			{
-				id: 'dept_neurology',
-				name: 'Neurology',
-				staffCount: 8,
-				documentCount: Math.floor(metrics.totalCases * 0.2),
-				activeConsultations: Math.floor(metrics.activeConsultations * 0.6) || 5,
-				headDoctor: 'Dr. Michael Chen'
-			},
-			{
-				id: 'dept_pediatrics',
-				name: 'Pediatrics',
-				staffCount: 15,
-				documentCount: Math.floor(metrics.totalCases * 0.25),
-				activeConsultations: Math.floor(metrics.activeConsultations * 1.5) || 12,
-				headDoctor: 'Dr. Emily Davis'
-			},
-			{
-				id: 'dept_emergency',
-				name: 'Emergency Medicine',
-				staffCount: 20,
-				documentCount: Math.floor(metrics.totalCases * 0.15),
-				activeConsultations: Math.floor(metrics.activeConsultations * 2.2) || 18,
-				headDoctor: 'Dr. Robert Johnson'
-			}
-		];
-
-		const staff: StaffSummary[] = [
-			{
-				id: 'staff_001',
-				name: 'Dr. Sarah Wilson',
-				role: 'Department Head',
-				department: 'Cardiology',
-				status: 'active',
-				lastActivity: new Date(Date.now() - 3600000)
-			},
-			{
-				id: 'staff_002',
-				name: 'Dr. Michael Chen',
-				role: 'Senior Doctor',
-				department: 'Neurology',
-				status: 'active',
-				lastActivity: new Date(Date.now() - 7200000)
-			},
-			{
-				id: 'staff_003',
-				name: 'Nurse Johnson',
-				role: 'Nurse',
-				department: 'Emergency',
-				status: 'active',
-				lastActivity: new Date(Date.now() - 1800000)
-			}
-		];
-
-		// Generate recent activity from AI insights
-		const recentActivity: Activity[] = insights.map((insight, index) => ({
-			id: `act_${index}`,
-			type:
-				insight.type === 'pattern_detected'
-					? 'share'
-					: insight.type === 'consultation_recommended'
-						? 'consultation'
-						: 'upload',
-			description: insight.description,
-			timestamp: insight.createdAt,
-			user: `AI System - ${insight.title}`
-		}));
-
-		return {
-			user,
-			stats: {
-				totalDocuments: metrics.totalCases || 1247,
-				documentsThisMonth: metrics.casesProcessedToday || 89,
-				sharedDocuments: metrics.globalConsultations || 234,
-				pendingApprovals: 12,
-				storageUsed: '2.3 GB',
-				storageLimit: '10 GB',
-				totalStaff: 67,
-				activeDepartments: 8,
-				totalPatients: metrics.totalCases || 1250,
-				complianceScore: Math.round(metrics.aiAccuracy || 98)
-			},
-			departments,
-			staff,
-			recentActivity,
-			complianceStatus: {
-				hipaa: 'compliant',
-				gdpr: 'compliant',
-				lastAudit: new Date(Date.now() - 2592000000), // 30 days ago
-				nextAudit: new Date(Date.now() + 2592000000) // 30 days from now
-			}
-		};
 	}
 
 	function refreshDashboard(): void {
 		isLoading = true;
 		error = null;
-		loadDashboardData().finally(() => {
-			isLoading = false;
-		});
+		loadDashboardData();
+	}
+
+	async function handleDepartmentAdded() {
+		// Refresh dashboard data to show new department
+		await refreshDashboard();
+	}
+
+	async function handleDepartmentUpdated(department: Department) {
+		// Handle department update - refresh dashboard
+		await refreshDashboard();
 	}
 </script>
 
@@ -289,7 +279,9 @@
 			<div class="dashboard-section">
 				<div class="section-header">
 					<h2>Department Overview</h2>
-					<button class="btn btn-sm btn-outline">Manage Departments</button>
+					<button onclick={() => (showDepartmentModal = true)} class="btn btn-sm btn-outline">
+						Manage Departments
+					</button>
 				</div>
 				<DepartmentOverview departments={dashboardData.departments} />
 			</div>
@@ -328,6 +320,18 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Department Management Modal -->
+{#if currentInstitutionId}
+	<DepartmentManagement
+		bind:isOpen={showDepartmentModal}
+		departments={currentInstitutionDepartments}
+		institutionId={currentInstitutionId}
+		ondepartmentadded={handleDepartmentAdded}
+		ondepartmentupdated={handleDepartmentUpdated}
+		onclose={() => (showDepartmentModal = false)}
+	/>
+{/if}
 
 <style>
 	.hospital-dashboard {

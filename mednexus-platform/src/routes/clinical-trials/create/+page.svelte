@@ -1,8 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { clinicalTrialService } from '$lib/services/clinicalTrialService';
-	// import { walletManager } from '$lib/wallet'; // Removed - no fake transactions
-	import { ArrowLeft, Plus, X, Building2, Users, Calendar, FileText, Wallet } from '@lucide/svelte';
+	import { walletStore, walletManager } from '$lib/wallet';
+	import {
+		ArrowLeft,
+		Plus,
+		X,
+		Building2,
+		Users,
+		Calendar,
+		FileText,
+		Wallet,
+		CheckCircle
+	} from '@lucide/svelte';
 
 	// Form state
 	let formData = $state({
@@ -117,73 +127,86 @@
 				return;
 			}
 
+			if (!$walletStore.isConnected) {
+				errorMessage = 'Please connect your wallet first';
+				return;
+			}
+
 			if (formData.sites.length === 0) {
 				errorMessage = 'Please add at least one study site';
 				return;
 			}
 
-			// Wallet transaction removed - no fake transactions
-			// Real blockchain integration will be added later
-
-			// Create the trial
-
-			// Create the trial
-			await clinicalTrialService.createTrial({
-				protocolNumber: formData.protocolNumber,
+			// Prepare blockchain trial data
+			const trialData = {
 				title: formData.title,
-				phase: formData.phase,
-				condition: formData.condition,
-				intervention: {
-					type: formData.interventionType,
-					name: formData.interventionName,
-					description: formData.description
-				},
-				objectives: formData.objectives,
-				eligibility: {
-					...formData.eligibility,
-					requiredDiagnoses: [formData.condition]
-				},
-				targetEnrollment: formData.targetEnrollment,
-				estimatedDuration: formData.estimatedDuration,
-				funding: {
-					source: formData.fundingSource,
-					totalBudget: formData.fundingAmount,
-					currency: 'USD',
-					perPatientCost: formData.fundingAmount / formData.targetEnrollment
-				},
-				principalInvestigator: {
-					name: formData.principalInvestigator.name,
-					institution: formData.principalInvestigator.institution,
-					credentials: ['MD', 'PhD'],
-					walletAddress: '' // Will be set from connected wallet if needed
-				},
-				sites: formData.sites.map((site, idx) => ({
-					siteId: `SITE-${Date.now()}-${idx}`,
-					institutionId: `INST-${Date.now()}-${idx}`,
-					institutionName: site.name,
-					location: site.location,
-					country: site.location.split(',').pop()?.trim() || 'USA',
-					principalInvestigator: formData.principalInvestigator.name,
-					status: 'pending' as const,
-					enrollmentTarget: site.targetEnrollment,
-					currentEnrollment: 0,
-					contactInfo: {
-						email: formData.principalInvestigator.email,
-						phone: '',
-						address: site.location
-					},
-					irbApproval: {
-						approved: false,
-						approvalDate: new Date().toISOString(),
-						expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-						irbName: 'Local IRB',
-						protocolNumber: formData.protocolNumber
-					},
-					lastUpdated: new Date().toISOString()
-				}))
-			}); // Navigate back to trials list
-			goto('/clinical-trials');
+				description: formData.description,
+				phase:
+					formData.phase === 'phase_1'
+						? 'Phase I'
+						: formData.phase === 'phase_2'
+							? 'Phase II'
+							: formData.phase === 'phase_3'
+								? 'Phase III'
+								: 'Phase IV',
+				trialType: 'Interventional',
+				therapeuticArea: formData.condition,
+				interventionType:
+					formData.interventionType === 'drug'
+						? 'Drug'
+						: formData.interventionType === 'device'
+							? 'Device'
+							: formData.interventionType === 'behavioral'
+								? 'Behavioral'
+								: formData.interventionType === 'procedure'
+									? 'Procedure'
+									: 'Other',
+				studyDesign: 'Randomized',
+				primaryEndpoint: formData.objectives.primary,
+				participants: formData.targetEnrollment,
+				duration: `${formData.estimatedDuration} months`,
+				ageRange: `${formData.eligibility.minAge}-${formData.eligibility.maxAge} years`,
+				genderCriteria:
+					formData.eligibility.gender === 'all'
+						? 'All'
+						: formData.eligibility.gender === 'male'
+							? 'Male'
+							: 'Female',
+				principalInvestigator: formData.principalInvestigator.name,
+				protocolNumber: formData.protocolNumber,
+				fundingSource: formData.fundingSource,
+				totalBudget: formData.fundingAmount,
+				visibility: 'institutional',
+				publicSummary: formData.description
+			};
+
+			console.log('🚀 Creating clinical trial on blockchain...', trialData);
+
+			// Import the blockchain service
+			const { clinicalTrialService: blockchainTrialService } = await import(
+				'$lib/services/clinicalTrialService'
+			);
+
+			// Create on blockchain and save to database
+			const result = await blockchainTrialService.createTrial(trialData);
+
+			console.log('✅ Blockchain result:', result.blockchain);
+			console.log('✅ Database result:', result.database);
+
+			if (result.blockchain.success && result.database.success) {
+				console.log('✅ Clinical trial created successfully!');
+				console.log('🔗 Transaction Hash:', result.blockchain.txHash);
+				console.log('📦 Block Number:', result.blockchain.blockNumber);
+				console.log('🆔 Trial ID:', result.blockchain.trialId);
+				console.log('💾 Database ID:', result.database.trialId);
+
+				// Navigate back to trials list
+				goto('/clinical-trials');
+			} else {
+				errorMessage = `Failed to create trial: ${result.blockchain.error || result.database.error}`;
+			}
 		} catch (error) {
+			console.error('❌ Creation failed:', error);
 			errorMessage = error instanceof Error ? error.message : 'Failed to create trial';
 		} finally {
 			isSubmitting = false;
@@ -204,9 +227,42 @@
 			</button>
 			<h1 class="text-3xl font-bold text-gray-900">Create New Clinical Trial</h1>
 			<p class="text-gray-600 mt-2">
-				Register a new multi-institutional clinical trial with AI-powered patient recruitment
+				Register a new blockchain-verified multi-institutional clinical trial
 			</p>
 		</div>
+
+		<!-- Wallet Connection -->
+		{#if !$walletStore.isConnected}
+			<div class="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+				<div class="flex items-center justify-between">
+					<div>
+						<h3 class="text-lg font-semibold text-amber-800">Wallet Required</h3>
+						<p class="text-amber-700 mt-1">
+							Connect your wallet to create blockchain-verified clinical trials (0.001 A0GI fee)
+						</p>
+					</div>
+					<button
+						onclick={() => walletManager.connect()}
+						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+					>
+						<Wallet class="w-4 h-4" />
+						Connect Wallet
+					</button>
+				</div>
+			</div>
+		{:else}
+			<div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+				<div class="flex items-center">
+					<CheckCircle class="w-5 h-5 text-green-400 mr-3" />
+					<div>
+						<h3 class="text-sm font-medium text-green-800">Wallet Connected</h3>
+						<p class="text-sm text-green-700">
+							{$walletStore.address?.slice(0, 6)}...{$walletStore.address?.slice(-4)}
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		{#if errorMessage}
 			<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -226,10 +282,11 @@
 				<h2 class="text-xl font-semibold mb-4">Basic Information</h2>
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="protocolNumber" class="block text-sm font-medium text-gray-700 mb-2">
 							Protocol Number <span class="text-red-500">*</span>
 						</label>
 						<input
+							id="protocolNumber"
 							type="text"
 							bind:value={formData.protocolNumber}
 							placeholder="e.g., NCT04891234"
@@ -238,10 +295,11 @@
 						/>
 					</div>
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="phase" class="block text-sm font-medium text-gray-700 mb-2">
 							Phase <span class="text-red-500">*</span>
 						</label>
 						<select
+							id="phase"
 							bind:value={formData.phase}
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							required
@@ -253,13 +311,14 @@
 						</select>
 					</div>
 					<div class="col-span-2">
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="trialTitle" class="block text-sm font-medium text-gray-700 mb-2">
 							Trial Title <span class="text-red-500">*</span>
 						</label>
 						<input
+							id="trialTitle"
 							type="text"
 							bind:value={formData.title}
-							placeholder="Enter trial title"
+							placeholder="Enter the trial title"
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							required
 						/>

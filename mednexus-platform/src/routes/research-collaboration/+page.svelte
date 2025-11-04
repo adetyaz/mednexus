@@ -37,11 +37,119 @@
 	});
 
 	async function loadCollaborations() {
-		collaborations = await researchCoordinationService.getAllCollaborations();
-		publications = researchCoordinationService.getAllPublications();
+		// Load from both sources - blockchain Supabase data and existing service
+		try {
+			// Import and load blockchain projects from Supabase
+			const { researchProjectService } = await import('$lib/services/researchProjectService');
+			const blockchainProjects = await researchProjectService.getProjects({ limit: 20 });
 
-		if (collaborations.length > 0 && !selectedCollaboration) {
-			selectCollaboration(collaborations[0]);
+			// Load existing collaborations
+			const existingCollaborations = await researchCoordinationService.getAllCollaborations();
+
+			// Combine both data sources
+			collaborations = [...existingCollaborations];
+
+			// Add blockchain projects as collaborations
+			blockchainProjects.forEach((project) => {
+				collaborations.push({
+					collaborationId: `blockchain-${project.id}`,
+					title: project.title,
+					type: 'observational_study' as const,
+					status: 'active' as const,
+					researchQuestion: project.description,
+					hypothesis: project.expected_results || 'To be determined',
+					primaryObjectives: project.expected_results ? [project.expected_results] : [],
+					secondaryObjectives: [],
+					specialty: project.research_field || 'General Medicine',
+					keywords: [],
+					protocol: {
+						title: project.title,
+						version: '1.0',
+						lastUpdated: new Date(project.updated_at || project.created_at),
+						methodology: project.methodology || 'Standard research methodology',
+						inclusionCriteria: [],
+						exclusionCriteria: [],
+						primaryEndpoints: [],
+						secondaryEndpoints: [],
+						statisticalPlan: 'To be determined',
+						dataManagementPlan: 'Standard data management',
+						qualityAssurance: []
+					},
+					ethics: {
+						siteSpecificApprovals: new Map(),
+						dataProtectionAssessment: true,
+						conflictOfInterestDeclared: true
+					},
+					dataCollection: {
+						targetSampleSize: 100,
+						currentSampleSize: 0,
+						dataQualityScore: 95,
+						missingDataPercentage: 0
+					},
+					results: {
+						analysisCompleted: false,
+						primaryEndpointsMet: false,
+						manuscriptDrafted: false,
+						peerReviewed: false,
+						published: false
+					},
+					leadInstitution: {
+						institutionId: project.lead_institution_id || 'unknown',
+						institutionName: project.medical_institutions?.name || 'Unknown Institution',
+						country: 'USA',
+						piWallet: project.lead_wallet_address,
+						piName: project.medical_doctors?.name || 'Unknown PI'
+					},
+					collaboratingInstitutions: [],
+					funding: {
+						totalBudget: project.funding_amount || 0,
+						currency: 'USD',
+						sources: [
+							{
+								source: project.funding_source || 'Not specified',
+								amount: project.funding_amount || 0,
+								type: 'institutional' as const
+							}
+						]
+					},
+					timeline: {
+						protocolDevelopment: new Date(project.start_date || project.created_at),
+						ethicsSubmission: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+						dataCollectionStart: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+						analysisStart: new Date(
+							project.expected_end_date || Date.now() + 300 * 24 * 60 * 60 * 1000
+						),
+						publicationTarget: new Date(
+							project.expected_end_date || Date.now() + 365 * 24 * 60 * 60 * 1000
+						)
+					},
+					blockchain: {
+						protocolHash: project.data_hash || project.transaction_hash || '',
+						registrationTxHash: project.transaction_hash,
+						dataProvenanceHashes: [project.transaction_hash || ''],
+						publicationHash: undefined
+					},
+					createdAt: new Date(project.created_at),
+					updatedAt: new Date(project.updated_at || project.created_at)
+				});
+			});
+
+			publications = researchCoordinationService.getAllPublications();
+
+			if (collaborations.length > 0 && !selectedCollaboration) {
+				selectCollaboration(collaborations[0]);
+			}
+
+			console.log('✅ Loaded collaborations:', collaborations);
+		} catch (error) {
+			console.error('❌ Failed to load collaborations:', error);
+			// Fallback to existing service only
+			collaborations = await researchCoordinationService.getAllCollaborations();
+			publications = researchCoordinationService.getAllPublications();
+
+			if (collaborations.length > 0 && !selectedCollaboration) {
+				selectCollaboration(collaborations[0]);
+			}
 		}
 	}
 

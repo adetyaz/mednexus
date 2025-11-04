@@ -378,7 +378,7 @@ export class BlockchainMedicalVerificationService {
 		try {
 			// Test basic connectivity first
 			const networkInfo = await this.provider.getNetwork();
-			console.log('Connected to network:', networkInfo.name);
+			console.log('Connected to network: 0G Chain Mainnet (Chain ID:', networkInfo.chainId.toString() + ')');
 			
 			// Try to initialize contract connection  
 			try {

@@ -129,7 +129,7 @@ class PatternRecognitionService {
 
 		try {
 			// Initialize 0G Services for real medical AI processing
-			const indexerUrl = 'https://indexer-storage-testnet-turbo.0g.ai';
+			const indexerUrl = 'https://indexer-storage-turbo.0g.ai';
 			this.zgIndexer = new Indexer(indexerUrl);
 			
 

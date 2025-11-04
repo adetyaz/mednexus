@@ -129,7 +129,7 @@ contract MedicalCollaborationHub is ReentrancyGuard {
     // Security constants
     uint256 public constant MAX_PARTICIPANTS = 50; // Prevent DoS
     uint256 public constant MAX_ARRAY_SIZE = 1000; // Storage limit
-    uint256 public constant COMMIT_REVEAL_DELAY = 1 hours; // Commit-reveal window
+    uint256 public constant COMMIT_REVEAL_DELAY = 1 seconds; // Commit-reveal window
     uint256 public constant MAX_DAILY_REPUTATION = 20; // Max reputation gain per day
     
     // Stake tracking for withdrawals

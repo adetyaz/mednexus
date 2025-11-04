@@ -159,7 +159,7 @@ class CrossBorderConsultationService {
 	constructor() {
 		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
 		this.zgStorage = new StorageKv(NETWORK_CONFIG.network.rpcUrl);
-		this.indexer = new Indexer('https://indexer-storage-testnet-turbo.0g.ai'); // Default indexer endpoint
+		this.indexer = new Indexer('https://indexer-storage-turbo.0g.ai'); // Mainnet indexer endpoint
 		this.initializeService();
 	}
 

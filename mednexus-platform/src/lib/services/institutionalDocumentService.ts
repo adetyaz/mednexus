@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import type { MedicalDataUpload } from './ogStorage';
 import type { VerifiedDoctor, MedicalInstitution } from './medicalInstitutionService';
+import { supabase } from '$lib/supabase';
 
 /**
  * Institutional Document Library Service
@@ -54,12 +55,10 @@ export interface InstitutionDocumentLibrary {
 
 export class InstitutionalDocumentService {
 	private libraries: Map<string, InstitutionDocumentLibrary> = new Map();
-	private storageKey = 'mednexus_institutional_documents';
 
 	constructor() {
-		if (browser) {
-			this.loadFromStorage();
-		}
+		// Document data now comes from database via ogStorage service
+		// No need to load from localStorage
 	}
 
 	/**
@@ -79,7 +78,6 @@ export class InstitutionalDocumentService {
 		};
 
 		this.libraries.set(institutionId, library);
-		this.saveToStorage();
 	}
 
 	/**
@@ -101,7 +99,6 @@ export class InstitutionalDocumentService {
 			
 			library.lastUpdated = new Date().toISOString();
 			this.libraries.set(institutionId, library);
-			this.saveToStorage();
 		}
 	}
 
@@ -165,7 +162,6 @@ export class InstitutionalDocumentService {
 
 		library.lastUpdated = new Date().toISOString();
 		this.libraries.set(doctor.institutionId, library);
-		this.saveToStorage();
 	}
 
 	/**
@@ -182,6 +178,9 @@ export class InstitutionalDocumentService {
 		sharedDocuments: InstitutionalDocumentReference[];
 		publicDocuments: InstitutionalDocumentReference[];
 	}> {
+		// Load documents from database
+		await this.loadDocumentsFromDatabase(doctor.institutionId, doctor.department);
+		
 		const library = this.libraries.get(doctor.institutionId);
 		if (!library) {
 			return {
@@ -297,7 +296,6 @@ export class InstitutionalDocumentService {
 
 		library.lastUpdated = new Date().toISOString();
 		this.libraries.set(institutionId, library);
-		this.saveToStorage();
 	}
 
 	/**
@@ -341,7 +339,6 @@ export class InstitutionalDocumentService {
 		toLibrary.lastUpdated = new Date().toISOString();
 
 		this.libraries.set(toInstitutionId, toLibrary);
-		this.saveToStorage();
 	}
 
 	/**
@@ -480,28 +477,112 @@ export class InstitutionalDocumentService {
 	}
 
 	// Private helper methods
-	private loadFromStorage(): void {
-		if (!browser) return;
+	// Note: Document metadata is now stored in Supabase database via ogStorage service
+	// This service only manages in-memory organization for UI purposes
 
+	/**
+	 * Load documents from database into memory cache
+	 */
+	private async loadDocumentsFromDatabase(institutionId: string, departmentId?: string): Promise<void> {
 		try {
-			const data = localStorage.getItem(this.storageKey);
-			if (data) {
-				const parsed = JSON.parse(data);
-				this.libraries = new Map(Object.entries(parsed));
+			// Query documents from database
+			let query = supabase
+				.from('medical_documents')
+				.select('*')
+				.eq('institution_id', institutionId);
+
+			if (departmentId) {
+				query = query.eq('department_id', departmentId);
 			}
-		} catch (error) {
-			console.error('Failed to load institutional document data from storage:', error);
-		}
-	}
 
-	private saveToStorage(): void {
-		if (!browser) return;
+			const { data, error } = await query;
 
-		try {
-			const obj = Object.fromEntries(this.libraries);
-			localStorage.setItem(this.storageKey, JSON.stringify(obj));
+			if (error) {
+				console.error('Failed to load documents from database:', error);
+				return;
+			}
+
+			if (!data || data.length === 0) {
+				return;
+			}
+
+			// Initialize institution library if needed
+			await this.initializeInstitutionLibrary(institutionId);
+			
+			const library = this.libraries.get(institutionId)!;
+
+			// Group documents by department and access level
+			for (const doc of data as any[]) {
+				const deptId = doc.department_id || 'general';
+				
+				// Ensure department exists
+				if (!library.departments[deptId]) {
+					library.departments[deptId] = {
+						privateDocuments: [],
+						departmentalDocuments: [],
+						institutionalDocuments: []
+					};
+				}
+
+				const documentRef: InstitutionalDocumentReference = {
+					fileId: doc.id,
+					fileName: doc.filename,
+					fileType: doc.data_type,
+					uploadDate: doc.upload_date,
+					fileSize: doc.file_size,
+					encryptionKey: doc.encryption_key || '',
+					storageHash: doc.storage_hash,
+					institutionId: doc.institution_id,
+					departmentId: doc.department_id,
+					uploadedBy: doc.uploaded_by,
+					accessLevel: doc.access_level as any,
+					medicalDataType: doc.data_type,
+					medicalSpecialty: doc.medical_specialty,
+					urgencyLevel: doc.urgency_level,
+					approvalStatus: doc.approval_status as any,
+					tags: doc.tags || [],
+					description: doc.description,
+					sharedWith: doc.shared_with || []
+				};
+
+				// Add to appropriate category
+				const dept = library.departments[deptId];
+				switch (doc.access_level) {
+					case 'private':
+						if (!dept.privateDocuments.some(d => d.fileId === doc.id)) {
+							dept.privateDocuments.push(documentRef);
+						}
+						break;
+					case 'departmental':
+						if (!dept.departmentalDocuments.some(d => d.fileId === doc.id)) {
+							dept.departmentalDocuments.push(documentRef);
+						}
+						break;
+					case 'institutional':
+						if (!dept.institutionalDocuments.some(d => d.fileId === doc.id)) {
+							dept.institutionalDocuments.push(documentRef);
+						}
+						break;
+					case 'shared':
+						if (!library.sharedDocuments.some(d => d.fileId === doc.id)) {
+							library.sharedDocuments.push(documentRef);
+						}
+						break;
+					case 'public':
+						if (!library.publicDocuments.some(d => d.fileId === doc.id)) {
+							library.publicDocuments.push(documentRef);
+						}
+						break;
+				}
+			}
+
+			library.lastUpdated = new Date().toISOString();
+			this.libraries.set(institutionId, library);
+
+			console.log(`✅ Loaded ${data.length} documents from database for ${institutionId}`);
+
 		} catch (error) {
-			console.error('Failed to save institutional document data to storage:', error);
+			console.error('Error loading documents from database:', error);
 		}
 	}
 }

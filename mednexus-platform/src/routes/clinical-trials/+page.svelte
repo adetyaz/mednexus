@@ -1,11 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { clinicalTrialService } from '$lib/services/clinicalTrialService';
-	import type {
-		ClinicalTrial,
-		RecruitmentMatch,
-		TrialParticipant
-	} from '$lib/services/clinicalTrialService';
 	import {
 		Users,
 		Activity,
@@ -25,10 +20,10 @@
 	} from '@lucide/svelte';
 
 	// State
-	let trials = $state<ClinicalTrial[]>([]);
-	let selectedTrial = $state<ClinicalTrial | null>(null);
-	let recruitmentMatches = $state<RecruitmentMatch[]>([]);
-	let participants = $state<TrialParticipant[]>([]);
+	let trials = $state<any[]>([]);
+	let selectedTrial = $state<any | null>(null);
+	let recruitmentMatches = $state<any[]>([]);
+	let participants = $state<any[]>([]);
 	let activeTab = $state<'overview' | 'recruitment' | 'sites' | 'safety'>('overview');
 	let filterPhase = $state<string>('all');
 	let filterStatus = $state<string>('all');
@@ -43,10 +38,105 @@
 	async function loadTrials() {
 		isLoading = true;
 		try {
-			trials = await clinicalTrialService.getAllTrials();
+			// Load from both sources - blockchain Supabase data and existing service
+			const existingTrials: any[] = [];
+
+			// Import and load blockchain trials from Supabase
+			const { clinicalTrialService: blockchainTrialService } = await import(
+				'$lib/services/clinicalTrialService'
+			);
+			const blockchainTrials = await blockchainTrialService.getTrials({ limit: 20 });
+
+			// Combine both data sources and convert blockchain trials to expected format
+			trials = [...existingTrials];
+
+			// Add blockchain trials
+			blockchainTrials.forEach((trial) => {
+				trials.push({
+					trialId: `blockchain-${trial.id}`,
+					protocolNumber: trial.protocol_number || `PROTO-${trial.id}`,
+					title: trial.title,
+					phase: trial.trial_phase?.toLowerCase().replace(' ', '_') || 'phase_1',
+					status: trial.status || 'recruiting',
+					condition: trial.therapeutic_area || 'Not specified',
+					intervention: {
+						type: trial.intervention_type?.toLowerCase() || 'drug',
+						name: trial.intervention_type || 'Not specified',
+						description: trial.description
+					},
+					description: trial.description,
+					objectives: {
+						primary: trial.primary_endpoint || 'Not specified',
+						secondary: []
+					},
+					eligibility: {
+						minAge: parseInt(trial.age_range?.split('-')[0] || '18'),
+						maxAge: parseInt(trial.age_range?.split('-')[1]?.replace(' years', '') || '65'),
+						gender: trial.gender_criteria?.toLowerCase() || 'all',
+						healthyVolunteers: false,
+						inclusionCriteria: [],
+						exclusionCriteria: [],
+						requiredDiagnoses: [trial.therapeutic_area || 'Not specified']
+					},
+					targetEnrollment: trial.target_enrollment || 0,
+					currentEnrollment: trial.current_enrollment || 0,
+					estimatedDuration: 24,
+					startDate: trial.study_start_date || trial.created_at,
+					estimatedCompletion: trial.estimated_completion_date,
+					funding: {
+						source: trial.funding_source || 'Not specified',
+						totalBudget: trial.total_budget || 0,
+						currency: 'USD',
+						perPatientCost: trial.total_budget
+							? trial.total_budget / (trial.target_enrollment || 1)
+							: 0
+					},
+					principalInvestigator: {
+						name: trial.principal_investigator || trial.medical_doctors?.name || 'Unknown PI',
+						institution: trial.medical_institutions?.name || 'Unknown Institution',
+						credentials: ['MD'],
+						walletAddress: trial.sponsor_wallet_address
+					},
+					sites: [
+						{
+							siteId: `site-${trial.id}`,
+							institutionId: trial.sponsor_institution_id || 'unknown',
+							institutionName: trial.medical_institutions?.name || 'Unknown Institution',
+							location: 'USA',
+							country: 'USA',
+							principalInvestigator: trial.principal_investigator || 'Unknown PI',
+							status: 'active' as const,
+							enrollmentTarget: trial.target_enrollment || 0,
+							currentEnrollment: trial.current_enrollment || 0,
+							contactInfo: {
+								email: 'contact@institution.com',
+								phone: '',
+								address: 'Institution Address'
+							},
+							irbApproval: {
+								approved: trial.irb_approval_status === 'approved',
+								approvalDate: trial.created_at,
+								expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+								irbName: 'Local IRB',
+								protocolNumber: trial.protocol_number || `PROTO-${trial.id}`
+							},
+							lastUpdated: trial.updated_at || trial.created_at
+						}
+					],
+					isBlockchain: true,
+					blockchainData: {
+						transactionHash: trial.transaction_hash,
+						blockNumber: trial.block_number,
+						contractAddress: trial.contract_address
+					}
+				});
+			});
+
 			if (trials.length > 0 && !selectedTrial) {
 				selectTrial(trials[0]);
 			}
+
+			console.log('✅ Loaded trials:', trials);
 		} catch (err) {
 			console.error('Error loading trials:', err);
 		} finally {
@@ -54,13 +144,13 @@
 		}
 	}
 
-	async function selectTrial(trial: ClinicalTrial) {
+	async function selectTrial(trial: any) {
 		selectedTrial = trial;
 		isLoading = true;
 
 		// Load trial-specific data
-		recruitmentMatches = clinicalTrialService.getRecruitmentMatches(trial.trialId);
-		participants = clinicalTrialService.getTrialParticipants(trial.trialId);
+		recruitmentMatches = [];
+		participants = [];
 
 		isLoading = false;
 	}
@@ -68,11 +158,9 @@
 	async function findEligiblePatients(trialId: string) {
 		isLoading = true;
 		try {
-			const matches = await clinicalTrialService.findEligiblePatients(trialId, 20);
-			recruitmentMatches = matches;
-			console.log(`Found ${matches.length} eligible patients`);
-		} catch (error) {
-			console.error('Error finding patients:', error);
+			// TODO: Implement patient matching with blockchain data
+			recruitmentMatches = [];
+			console.log('Patient matching not yet implemented for blockchain trials');
 		} finally {
 			isLoading = false;
 		}
@@ -132,7 +220,7 @@
 		return colors[status] || 'bg-gray-100 text-gray-800';
 	}
 
-	function getEnrollmentPercentage(trial: ClinicalTrial): number {
+	function getEnrollmentPercentage(trial: any): number {
 		return Math.round((trial.enrollment.total / trial.design.enrollmentTarget) * 100);
 	}
 

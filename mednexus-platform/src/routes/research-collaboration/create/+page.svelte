@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { researchCoordinationService } from '$lib/services/researchCoordinationService';
-	// import { walletManager } from '$lib/wallet'; // Removed - no fake transactions
+	import { researchProjectService } from '$lib/services/researchProjectService';
+	import { walletStore, walletManager } from '$lib/wallet';
 	import {
 		ArrowLeft,
 		Users,
@@ -48,6 +49,18 @@
 	let isSubmitting = $state(false);
 	let error = $state('');
 	let currentStep = $state(1);
+
+	// Helper function to get type label
+	function getTypeLabel(type: string): string {
+		const typeMap: Record<string, string> = {
+			observational_study: 'Observational Study',
+			systematic_review: 'Systematic Review',
+			meta_analysis: 'Meta-Analysis',
+			registry_study: 'Registry Study',
+			case_series: 'Case Series'
+		};
+		return typeMap[type] || 'Other';
+	}
 
 	// Add objective
 	function addObjective() {
@@ -118,71 +131,52 @@
 			return;
 		}
 
+		if (!$walletStore.isConnected) {
+			error = 'Please connect your wallet first';
+			return;
+		}
+
 		isSubmitting = true;
 		error = '';
 
 		try {
-			// Wallet transaction removed - no fake transactions
-			// Real blockchain integration will be added later
-
-			// Create the collaboration
-
-			const collaborationData = {
+			// Prepare blockchain project data
+			const projectData = {
 				title: formData.title,
-				type: formData.type,
 				description: formData.description,
-				objectives: formData.objectives,
-				leadInstitution: {
-					institutionId: `INST-${Date.now()}`,
-					institutionName: formData.leadInstitution.name,
-					country: formData.leadInstitution.location.split(',').pop()?.trim() || 'USA',
-					piWallet: '', // Will be set from connected wallet if needed
-					piName: formData.leadInstitution.principalInvestigator
-				},
-				collaboratingInstitutions: formData.collaboratingInstitutions.map((inst, idx) => ({
-					institutionId: `INST-${Date.now()}-${idx}`,
-					institutionName: inst.name,
-					country: inst.location.split(',').pop()?.trim() || 'USA',
-					piWallet: '', // Will be set from connected wallet if needed
-					piName: 'To be assigned'
-				})),
-				funding: {
-					totalBudget: formData.totalBudget,
-					currency: 'USD',
-					fundingSource: formData.fundingSource,
-					budgetBreakdown: {
-						personnel: formData.totalBudget * 0.5,
-						equipment: formData.totalBudget * 0.2,
-						supplies: formData.totalBudget * 0.15,
-						travel: formData.totalBudget * 0.1,
-						other: formData.totalBudget * 0.05
-					}
-				},
-				timeline: {
-					startDate: new Date().toISOString(),
-					estimatedEndDate: new Date(
-						Date.now() + formData.duration * 30 * 24 * 60 * 60 * 1000
-					).toISOString(),
-					milestones: [
-						{
-							name: 'Ethics Approval',
-							date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-							status: 'pending' as const
-						},
-						{
-							name: 'Data Collection Start',
-							date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-							status: 'pending' as const
-						}
-					]
-				}
+				researchField: getTypeLabel(formData.type),
+				projectType: 'Research Collaboration',
+				expectedResults: formData.objectives.join(', '),
+				methodology: formData.description,
+				fundingSource: formData.fundingSource,
+				fundingAmount: formData.totalBudget,
+				visibility: 'collaborative' as const,
+				collaboratingInstitutions: formData.collaboratingInstitutions.map((inst) => inst.name),
+				teamMembers: [formData.leadInstitution.principalInvestigator]
 			};
 
-			await researchCoordinationService.createCollaboration(collaborationData);
+			console.log('🚀 Creating research project on blockchain...', projectData);
 
-			// Navigate back to collaborations list
-			goto('/research-collaboration');
+			// Create on blockchain and save to database
+			const result = await researchProjectService.createProject(projectData);
+
+			console.log('✅ Blockchain result:', result.blockchain);
+			console.log('✅ Database result:', result.database);
+
+			if (result.blockchain.success && result.database.success) {
+				console.log('✅ Research project created successfully!');
+				console.log('🔗 Transaction Hash:', result.blockchain.txHash);
+				console.log('📦 Block Number:', result.blockchain.blockNumber);
+				console.log('🆔 Project ID:', result.blockchain.projectId);
+				console.log('💾 Database ID:', result.database.projectId);
+
+				// Navigate back to collaborations list
+				goto('/research-collaboration');
+			} else {
+				error = `Failed to create project: ${result.blockchain.error || result.database.error}`;
+			}
 		} catch (err) {
+			console.error('❌ Creation failed:', err);
 			error = err instanceof Error ? err.message : 'Failed to create collaboration';
 		} finally {
 			isSubmitting = false;
@@ -202,8 +196,43 @@
 				Back to Research Collaborations
 			</button>
 			<h1 class="text-3xl font-bold text-gray-900">Create Research Collaboration</h1>
-			<p class="text-gray-600 mt-2">Set up a new multi-institutional research project</p>
+			<p class="text-gray-600 mt-2">
+				Set up a new blockchain-verified multi-institutional research project
+			</p>
 		</div>
+
+		<!-- Wallet Connection -->
+		{#if !$walletStore.isConnected}
+			<div class="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
+				<div class="flex items-center justify-between">
+					<div>
+						<h3 class="text-lg font-semibold text-amber-800">Wallet Required</h3>
+						<p class="text-amber-700 mt-1">
+							Connect your wallet to create blockchain-verified research collaborations (0.001 A0GI
+							fee)
+						</p>
+					</div>
+					<button
+						onclick={() => walletManager.connect()}
+						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+					>
+						Connect Wallet
+					</button>
+				</div>
+			</div>
+		{:else}
+			<div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+				<div class="flex items-center">
+					<CheckCircle class="w-5 h-5 text-green-400 mr-3" />
+					<div>
+						<h3 class="text-sm font-medium text-green-800">Wallet Connected</h3>
+						<p class="text-sm text-green-700">
+							{$walletStore.address?.slice(0, 6)}...{$walletStore.address?.slice(-4)}
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Progress Steps -->
 		<div class="mb-8">

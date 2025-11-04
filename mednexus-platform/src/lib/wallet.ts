@@ -24,28 +24,28 @@ export const walletStore = writable<WalletState>({
 
 console.log('Wallet: Store initialized');
 
-// 0G Chain configuration
+// 0G Chain configuration (Mainnet)
 const ogChain = {
-	id: 16602,
-	name: '0G-Newton-Testnet',
-	network: '0g-testnet',
+	id: 16661,
+	name: '0G-Mainnet',
+	network: '0g-mainnet',
 	nativeCurrency: {
 		decimals: 18,
-		name: 'A0GI',
-		symbol: 'A0GI'
+		name: '0G',
+		symbol: '0G'
 	},
 	rpcUrls: {
 		default: {
-			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai']
+			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc.0g.ai']
 		},
 		public: {
-			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc-testnet.0g.ai']
+			http: [PUBLIC_OG_RPC_URL || 'https://evmrpc.0g.ai']
 		}
 	},
 	blockExplorers: {
 		default: {
 			name: '0G Chain Explorer',
-			url: 'https://chainscan-newton.0g.ai'
+			url: 'https://chainscan.0g.ai'
 		}
 	}
 };
@@ -179,7 +179,7 @@ class WalletManager {
 	isOnOGChain(): boolean {
 		let isOnCorrectChain = false;
 		walletStore.subscribe(state => {
-			isOnCorrectChain = state.chainId === 16602;
+			isOnCorrectChain = state.chainId === 16661;
 		})();
 		return isOnCorrectChain;
 	}

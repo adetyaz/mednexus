@@ -33,13 +33,31 @@ Imagine a patient in New York with a rare condition that's only been seen twice 
 
 ## 🚀 Get Started
 
-Explore our documentation to learn how MedNexus is revolutionizing global healthcare through:
+### 🎥 **Video Journey Guide**
 
-- **[Technical Architecture](./overview/technical-architecture)** - How we leverage 0G Chain's complete infrastructure
-- **[Expert Publications](./overview/expert-publications)** - Global platform for medical journals, research, and knowledge sharing
-- **[Medical Intelligence INFTs](./overview/medical-infts)** - Tokenizing medical expertise for global collaboration
-- **[Implementation Roadmap](./overview/roadmap)** - Our 5-wave development plan
-- **[Features Overview](./overview/features)** - Complete platform capabilities
+Follow this recommended viewing order to understand MedNexus comprehensively:
+
+1. **[Executive Summary](./overview/executive-summary)** - Start here for the complete platform demo showcasing diagnostics, compute, and consultations
+2. **[Smart Contracts](./overview/smart-contracts)** - Watch live mainnet contract deployments on 0G Chain
+3. **[Features](./overview/features)** - Explore the INFT Marketplace in action
+4. **[Blockchain Integration](./overview/blockchain-integration)** - See clinical trial management live
+5. **[Platform Services](./overview/platform-services)** - Discover the research collaboration network
+
+### 📖 **Documentation Structure**
+
+Explore our documentation to learn how MedNexus is revolutionizing global healthcare:
+
+- **[Smart Contracts](./overview/smart-contracts)** - Live mainnet deployments with creation videos
+- **[Platform Services](./overview/platform-services)** - Medical institution and research collaboration systems
+- **[Blockchain Integration](./overview/blockchain-integration)** - 0G Chain integration with live demos
+- **[Features Overview](./overview/features)** - INFT Marketplace and platform capabilities
+- **[Expert Publications](./overview/expert-publications)** - Global platform for medical knowledge sharing
+
+---
+
+## 👨‍💻 **Developer**
+
+MedNexus is developed by [@neroworkgigs](https://x.com/neroworkgigs) - Building the future of decentralized medical intelligence on 0G Chain.
 
 ---
 

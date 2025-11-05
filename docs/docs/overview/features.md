@@ -2,7 +2,14 @@
 sidebar_position: 2
 ---
 
+import LoomVideo from '@site/src/components/LoomVideo';
+
 # Core Features
+
+<LoomVideo 
+  videoId="d848904f7121408a861e58550f986ad9"
+  title="INFT Marketplace - Live Platform Demo"
+/>
 
 ## 🏥 **Medical Intelligence Network**
 

@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
       label: "Project Overview",
       items: [
         "overview/executive-summary",
+        "overview/unique-selling-points",
         "overview/inspiration",
         "overview/the-problem",
         "overview/the-solution",
@@ -31,39 +32,21 @@ const sidebars: SidebarsConfig = {
       type: "category",
       label: "Platform Features",
       items: [
-        "overview/core-features",
+        "overview/features",
         "overview/expert-publications",
-        "overview/medical-infts",
         "overview/target-users",
         "overview/jeff-story",
       ],
     },
     {
       type: "category",
-      label: "Technical Details",
+      label: "Technical Implementation",
       items: [
-        "overview/technical-architecture",
-        "overview/0g-integration-highlights",
-        "overview/medical-infts",
-        "overview/tokenization-model",
+        "overview/smart-contracts",
+        "overview/platform-services",
+        "overview/blockchain-integration",
+        "overview/deployment-infrastructure",
       ],
-    },
-    {
-      type: "category",
-      label: "Development",
-      items: [
-        "overview/roadmap",
-        "overview/wave-2",
-        "overview/real-world-usability-demo",
-        "overview/weekly",
-        "overview/innovation-impact",
-        "overview/team",
-      ],
-    },
-    {
-      type: "category",
-      label: "Resources",
-      items: ["overview/additional-links"],
     },
   ],
 };

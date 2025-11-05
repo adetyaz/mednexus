@@ -16,7 +16,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: "https://mednexus.netlify.app/", 
+  url: "https://mednexus.netlify.app/",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
@@ -99,8 +99,8 @@ const config: Config = {
               to: "/docs/intro",
             },
             {
-              label: "Technical Architecture",
-              to: "/docs/overview/technical-architecture",
+              label: "Smart Contracts",
+              to: "/docs/overview/smart-contracts",
             },
             {
               label: "Features",
@@ -137,8 +137,12 @@ const config: Config = {
               href: "https://github.com/adetyaz/mednexus",
             },
             {
-              label: "Roadmap",
-              to: "/docs/overview/roadmap",
+              label: "Developer",
+              href: "https://x.com/neroworkgigs",
+            },
+            {
+              label: "Deployment",
+              to: "/docs/overview/deployment-infrastructure",
             },
           ],
         },

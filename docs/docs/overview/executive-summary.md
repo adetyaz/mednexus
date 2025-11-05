@@ -5,6 +5,8 @@ sidebar_label: Executive Summary
 
 import LoomVideo from '@site/src/components/LoomVideo';
 
+## 🌐 **[Try MedNexus Live Platform →](https://mednexus-eight.vercel.app/)**
+
 <LoomVideo 
   videoId="ce7acc5167804fea9303a4d0329847fb"
   title="Complete Platform Demo: Diagnostics, Compute & Consultations"

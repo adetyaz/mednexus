@@ -82,6 +82,11 @@ const config: Config = {
         },
         { to: "/blog", label: "Blog", position: "left" },
         {
+          href: "https://mednexus-eight.vercel.app/",
+          label: "Live Platform",
+          position: "right",
+        },
+        {
           href: "https://github.com/adetyaz/mednexus",
           label: "GitHub",
           position: "right",
@@ -128,6 +133,10 @@ const config: Config = {
         {
           title: "More",
           items: [
+            {
+              label: "Live Platform",
+              href: "https://mednexus-eight.vercel.app/",
+            },
             {
               label: "Blog",
               to: "/blog",

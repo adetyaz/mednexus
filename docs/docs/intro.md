@@ -6,6 +6,8 @@ sidebar_position: 1
 
 **Transforming isolated medical institutions into a connected global intelligence network where every patient benefits from worldwide medical expertise**
 
+🌐 **[Live Platform](https://mednexus-eight.vercel.app/)** | 📋 **[Smart Contracts](./overview/smart-contracts)** | 🎬 **[Demo Videos](./overview/executive-summary)**
+
 ## 🎯 Executive Summary
 
 ### The Vision

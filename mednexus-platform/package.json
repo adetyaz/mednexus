@@ -43,6 +43,7 @@
 		"@reown/appkit": "^1.8.1",
 		"@reown/appkit-adapter-ethers": "^1.8.1",
 		"@supabase/supabase-js": "^2.74.0",
+		"@sveltejs/adapter-vercel": "^6.1.1",
 		"@types/crypto-js": "^4.2.2",
 		"crypto-js": "^4.2.0",
 		"empty-module": "^0.0.2",

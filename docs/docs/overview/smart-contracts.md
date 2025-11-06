@@ -59,6 +59,13 @@ Solves the global problem of medical credential verification across borders. Whe
 - **Evidence Packages**: Supporting documentation for verification decisions
 - **Audit Trails**: Complete verification history with tamper-proof storage
 
+**Live Mainnet:**
+
+```
+0G Storage Hash 1: 0xe5024b735fe1995aa8215ae71673a0e1a027f6b3220309f603a9e588b9d3d62c
+0G Storage Hash 2: 0x974f98de97debffd7ae2c09548f92924de9897b76025734f1d9d2a16d9e90366
+```
+
 ### **0G Compute Integration**
 
 - **Automated Verification**: AI-powered analysis of medical credentials and documents

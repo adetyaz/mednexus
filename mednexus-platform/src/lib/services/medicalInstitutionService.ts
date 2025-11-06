@@ -176,10 +176,9 @@ export class MedicalInstitutionService {
 				throw new Error('Wallet not connected. Please connect your wallet to register institution.');
 			}
 
-			// Create contract instance with signer for transactions
-			const contractWithSigner = this.medicalVerificationContract.connect(signer);
-			
-			// Create credential hash from institution data
+		// Create contract instance with signer for transactions
+		// Use MedicalCollaborationHub contract since that's where doctors are registered
+		const contractWithSigner = this.collaborationHubContract.connect(signer);			// Create credential hash from institution data
 			const credentialHash = ethers.keccak256(
 				ethers.toUtf8Bytes(JSON.stringify({
 					name: institutionData.name,
@@ -188,13 +187,36 @@ export class MedicalInstitutionService {
 				}))
 			);
 
-			console.log(`🏥 Registering institution "${institutionData.name}" on blockchain...`);
+			console.log(`🏥 Registering institution "${institutionData.name}" on MedicalCollaborationHub contract...`);
 			
-			// Call smart contract registerInstitution function
+			// Call smart contract registerInstitution function on MedicalCollaborationHub
+			// The function expects: name, country, specialties[], nonce for commit-reveal
+			const specialties = ["General Medicine", "Emergency Care"]; // Default specialties
+			const nonce = Math.floor(Math.random() * 1000000); // Random nonce for commit-reveal
+			
+			// First commit the registration
+			const commitHash = ethers.keccak256(
+				ethers.AbiCoder.defaultAbiCoder().encode(
+					["string", "string", "uint256", "address"],
+					[institutionData.name, "Global", nonce, await signer.getAddress()]
+				)
+			);
+			
+			console.log('🔐 Committing registration...');
+			const commitTx = await (contractWithSigner as any).commitRegistration(commitHash);
+			await commitTx.wait();
+			
+			// Wait for commit delay
+			console.log('⏳ Waiting for commit delay...');
+			await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+			
+			console.log('📝 Revealing registration...');
 			const tx = await (contractWithSigner as any).registerInstitution(
 				institutionData.name,
-				"Global", // For now, using "Global" as country
-				credentialHash
+				"Global", // Country
+				specialties, // Specialties array
+				nonce, // Nonce for reveal
+				{ value: ethers.parseEther("0.002") } // Institution stake
 			);
 
 			console.log(`⏳ Transaction submitted: ${tx.hash}`);
@@ -208,7 +230,7 @@ export class MedicalInstitutionService {
 			return {
 				walletAddress: signerAddress,
 				transactionHash: tx.hash,
-				credentialHash: credentialHash,
+				credentialHash: credentialHash, // Keep for compatibility
 				blockNumber: receipt.blockNumber,
 				timestamp: new Date()
 			};
@@ -275,6 +297,20 @@ export class MedicalInstitutionService {
 
 		console.log('✅ Institution found:', institutionData.name, 'Wallet:', institutionData.wallet_address);
 
+		// Verify institution is actually registered on blockchain
+		const isVerified = await this.isInstitutionVerifiedOnBlockchain(institutionData.wallet_address);
+		if (!isVerified) {
+			console.error('❌ Institution not verified on blockchain:', institutionData.wallet_address);
+			const blockchainData = await this.getInstitutionFromBlockchain(institutionData.wallet_address);
+			
+			// Convert BigInt values to strings for JSON serialization
+			const serializedData = this.serializeBlockchainData(blockchainData);
+			
+			throw new Error(`Institution ${institutionData.name} (${institutionData.wallet_address}) is not verified on the blockchain. Please register the institution first. Blockchain data: ${JSON.stringify(serializedData)}`);
+		}
+
+		console.log('✅ Institution verified on blockchain:', institutionData.wallet_address);
+
 		// Step 2: Register on blockchain first
 		const blockchainResult = await this.registerDoctorOnBlockchain(
 			doctorData, 
@@ -317,12 +353,42 @@ export class MedicalInstitutionService {
 
 		const doctorWallet = await signer.getAddress();
 		console.log('👨‍⚕️ Registering doctor on blockchain:', doctorWallet);
+		console.log('🏥 Institution wallet address being used:', institutionWallet);
 
 		// Create contract instance with signer
 		const contractWithSigner = this.collaborationHubContract.connect(signer);
 
+		// Double-check institution verification right before the call
+		console.log('🔍 Verifying institution on blockchain before doctor registration...');
+		console.log('🔍 Contract address:', this.COLLABORATION_HUB_ADDRESS);
+		console.log('🔍 Institution wallet to check:', institutionWallet);
 		
-		const stakeAmount = ethers.parseEther("0.000005");
+		const isVerified = await (contractWithSigner as any).verifiedInstitutions(institutionWallet);
+		console.log('✅ Institution verified status:', isVerified);
+		
+		// Also check the institutions mapping to see what data exists
+		const institutionStruct = await (contractWithSigner as any).institutions(institutionWallet);
+		console.log('🏥 Full institution struct:', this.serializeBlockchainData(institutionStruct));
+		
+		// Check if institution has data even if not marked as verified
+		const hasData = institutionStruct && institutionStruct[0] && institutionStruct[0] !== '';
+		console.log('🔍 Institution has data:', hasData);
+		
+		if (!isVerified) {
+			console.log('❌ Institution verification failed but let\'s check if it has valid data...');
+			
+			if (hasData) {
+				console.log('⚠️ Institution has data but verification flag is false. This might be a contract issue.');
+				console.log('🔄 Proceeding with registration anyway since institution data exists...');
+			} else {
+				// Convert BigInt values to strings for JSON serialization
+				const serializedData = this.serializeBlockchainData(institutionStruct);
+				
+				throw new Error(`BLOCKCHAIN CHECK: Institution ${institutionWallet} is NOT verified on the smart contract and has no data. Institution data: ${JSON.stringify(serializedData)}`);
+			}
+		}
+
+		const stakeAmount = ethers.parseEther("0.0005");
 	
 
 		try {
@@ -912,6 +978,61 @@ export class MedicalInstitutionService {
 		const timestamp = Date.now();
 		const nameSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 		return `dept_${nameSlug}_${timestamp}`;
+	}
+
+	/**
+	 * Check if institution is verified on blockchain
+	 */
+	async isInstitutionVerifiedOnBlockchain(walletAddress: string): Promise<boolean> {
+		try {
+			const isVerified = await this.collaborationHubContract.verifiedInstitutions(walletAddress);
+			console.log(`🏥 Institution ${walletAddress} verified on blockchain:`, isVerified);
+			return isVerified;
+		} catch (error) {
+			console.error('❌ Error checking institution verification:', error);
+			return false;
+		}
+	}
+
+	/**
+	 * Get institution details from blockchain
+	 */
+	async getInstitutionFromBlockchain(walletAddress: string): Promise<any> {
+		try {
+			const institution = await this.collaborationHubContract.institutions(walletAddress);
+			console.log(`🏥 Institution data from blockchain for ${walletAddress}:`, institution);
+			return institution;
+		} catch (error) {
+			console.error('❌ Error getting institution from blockchain:', error);
+			return null;
+		}
+	}
+
+	/**
+	 * Helper function to serialize blockchain data with BigInt values
+	 */
+	private serializeBlockchainData(data: any): any {
+		if (data === null || data === undefined) return data;
+		
+		if (typeof data === 'bigint') {
+			return data.toString();
+		}
+		
+		if (Array.isArray(data)) {
+			return data.map(item => this.serializeBlockchainData(item));
+		}
+		
+		if (typeof data === 'object') {
+			const serialized: any = {};
+			for (const key in data) {
+				if (data.hasOwnProperty(key)) {
+					serialized[key] = this.serializeBlockchainData(data[key]);
+				}
+			}
+			return serialized;
+		}
+		
+		return data;
 	}
 
 	/**

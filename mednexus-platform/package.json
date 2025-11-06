@@ -45,6 +45,8 @@
 		"@supabase/supabase-js": "^2.74.0",
 		"@types/crypto-js": "^4.2.2",
 		"crypto-js": "^4.2.0",
-		"ethers": "6.13.1"
+		"empty-module": "^0.0.2",
+		"ethers": "6.13.1",
+		"path-browserify": "^1.0.1"
 	}
 }

@@ -1,10 +1,11 @@
 import { browser } from '$app/environment';
 import { ethers } from 'ethers';
-import { Indexer, ZgFile, KvClient, StorageKv } from '@0glabs/0g-ts-sdk/browser';
 import { NETWORK_CONFIG } from '$lib/config/config';
 import { patternRecognitionService } from './patternRecognitionService';
 import { diagnosticMetricsService } from './diagnosticMetricsService';
 import type { PatternAnalysisResult } from './patternRecognitionService';
+
+// 0G SDK removed - using server endpoints for storage operations
 
 /**
  * Medical Case interface for consultation system
@@ -153,13 +154,15 @@ class CrossBorderConsultationService {
 	private consultationResults: Map<string, CrossBorderConsultationResult> = new Map();
 	private smartContracts: Map<string, ConsultationSmartContract> = new Map();
 	private licenseRegistry: Map<string, MedicalLicenseVerification> = new Map();
-	private zgStorage!: StorageKv;
-	private indexer!: Indexer;
+	// Server-side 0G SDK (StorageKv/Indexer) are not available in browser builds.
+	private zgStorage: any = null;
+	private indexer: any = null;
 
 	constructor() {
 		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
-		this.zgStorage = new StorageKv(NETWORK_CONFIG.network.rpcUrl);
-		this.indexer = new Indexer('https://indexer-storage-turbo.0g.ai'); // Mainnet indexer endpoint
+		// Use server endpoints for storage/indexer operations; initialize to null in browser
+		this.zgStorage = null;
+		this.indexer = null;
 		this.initializeService();
 	}
 
@@ -242,7 +245,7 @@ class CrossBorderConsultationService {
 					console.log('AI analysis upgraded urgency level to urgent due to critical patterns');
 				}
 				
-				console.log(`AI analysis completed: ${aiAnalysisResult.identifiedPatterns.length} patterns found, ${aiAnalysisResult.confidenceScore.toFixed(1)}% confidence`);
+				console.log(`AI analysis completed: ${aiAnalysisResult.identifiedPatterns?.length || 0} patterns found, ${(aiAnalysisResult.confidenceScore || 0).toFixed(1)}% confidence`);
 				
 			} catch (aiError) {
 				console.warn('AI analysis failed, proceeding with consultation without AI insights:', aiError);
@@ -254,7 +257,7 @@ class CrossBorderConsultationService {
 			// Step 2: Find qualified international specialists
 			// Use AI insights to refine specialty selection if available
 			let effectiveSpecialty = targetSpecialty;
-			if (aiAnalysisResult && aiAnalysisResult.identifiedPatterns.length > 0) {
+			if (aiAnalysisResult && aiAnalysisResult.identifiedPatterns && aiAnalysisResult.identifiedPatterns.length > 0) {
 				const rareDiseasePatterns = aiAnalysisResult.identifiedPatterns.filter(p => p.patternType === 'rare_disease');
 				if (rareDiseasePatterns.length > 0 && rareDiseasePatterns[0].confidence > 85) {
 					// For high-confidence rare disease patterns, might want genetic specialist
@@ -308,14 +311,14 @@ class CrossBorderConsultationService {
 				// Add AI analysis results to consultation request
 				aiAnalysis: aiAnalysisResult ? {
 					analysisId: `ai_${consultationId}`,
-					patternsDetected: aiAnalysisResult.identifiedPatterns.length,
-					confidenceScore: aiAnalysisResult.confidenceScore,
-					urgencyLevel: aiAnalysisResult.urgencyLevel,
-					recommendedTests: aiAnalysisResult.suggestedTests.slice(0, 5),
-					differentials: aiAnalysisResult.recommendedDifferentials.slice(0, 5),
+					patternsDetected: aiAnalysisResult.identifiedPatterns?.length || 0,
+					confidenceScore: aiAnalysisResult.confidenceScore || 0,
+					urgencyLevel: aiAnalysisResult.urgencyLevel || 'low',
+					recommendedTests: aiAnalysisResult.suggestedTests?.slice(0, 5) || [],
+					differentials: aiAnalysisResult.recommendedDifferentials?.slice(0, 5) || [],
 					criticalFindings: aiAnalysisResult.identifiedPatterns
-						.filter(p => p.confidence > 90 || p.patternType === 'rare_disease')
-						.map(p => p.description)
+						?.filter(p => p.confidence > 90 || p.patternType === 'rare_disease')
+						?.map(p => p.description) || []
 				} : undefined
 			};
 
@@ -325,19 +328,19 @@ class CrossBorderConsultationService {
 			this.activeConsultations.set(consultationId, request);
 
 			// Step 6: Add AI insight if high-confidence patterns found
-			if (aiAnalysisResult && aiAnalysisResult.identifiedPatterns.some(p => p.confidence > 85)) {
+			if (aiAnalysisResult && aiAnalysisResult.identifiedPatterns?.some(p => p.confidence > 85)) {
 				await diagnosticMetricsService.addAIInsight({
 					type: 'consultation_recommended',
 					caseId: medicalCase.id,
 					title: 'AI-Enhanced Consultation Created',
-					description: `Cross-border consultation initiated with AI pattern analysis (${aiAnalysisResult.confidenceScore.toFixed(1)}% confidence)`,
-					confidence: aiAnalysisResult.confidenceScore,
+					description: `Cross-border consultation initiated with AI pattern analysis (${(aiAnalysisResult.confidenceScore || 0).toFixed(1)}% confidence)`,
+					confidence: aiAnalysisResult.confidenceScore || 0,
 					priority: aiAnalysisResult.urgencyLevel === 'critical' ? 'critical' : 'high',
 					actionRequired: true,
 					recommendations: [
 						`Consultation ID: ${consultationId}`,
-						`Patterns detected: ${aiAnalysisResult.identifiedPatterns.length}`,
-						...aiAnalysisResult.identifiedPatterns.slice(0, 2).map(p => p.description)
+						`Patterns detected: ${aiAnalysisResult.identifiedPatterns?.length || 0}`,
+						...(aiAnalysisResult.identifiedPatterns?.slice(0, 2).map(p => p.description) || [])
 					]
 				});
 			}
@@ -346,7 +349,7 @@ class CrossBorderConsultationService {
 			console.log(`Contract address: ${smartContractAddress}`);
 			console.log(`Target specialists: ${targetSpecialists.length} found`);
 			if (aiAnalysisResult) {
-				console.log(`AI analysis: ${aiAnalysisResult.identifiedPatterns.length} patterns, ${aiAnalysisResult.confidenceScore.toFixed(1)}% confidence`);
+				console.log(`AI analysis: ${aiAnalysisResult.identifiedPatterns?.length || 0} patterns, ${(aiAnalysisResult.confidenceScore || 0).toFixed(1)}% confidence`);
 			}
 
 			return request;

@@ -7,11 +7,6 @@ import { supabase } from '$lib/supabase';
 import { MedicalInstitutionService } from './medicalInstitutionService';
 import { medicalDocumentManager } from './medicalDocumentManagementService';
 import { walletStore } from '$lib/wallet';
-
-// Import 0G SDK with browser suffix for Vite compatibility
-import { Indexer, StorageKv, ZgFile } from '@0glabs/0g-ts-sdk/browser';
-
-// Import 0G Compute Network SDK - exactly as documented
 import { createZGComputeNetworkBroker } from '@0glabs/0g-serving-broker';
 
 export interface PatternMatch {
@@ -108,10 +103,10 @@ class PatternRecognitionService {
 	private knownCombinations: Map<string, string[]> = new Map();
 	private symptomWeights: Map<string, number> = new Map();
 	
-	// 0G SDK instances for storage and compute operations
-	private zgIndexer?: Indexer;
-	private zgStorage?: StorageKv;
-	private zgFile?: ZgFile;
+	// 0G SDK instances disabled for client builds
+	// private zgIndexer?: Indexer;
+	// private zgStorage?: StorageKv;
+	// private zgFile?: ZgFile;
 
 	constructor() {
 		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
@@ -128,9 +123,9 @@ class PatternRecognitionService {
 		if (!browser || PatternRecognitionService.initialized) return;
 
 		try {
-			// Initialize 0G Services for real medical AI processing
-			const indexerUrl = 'https://indexer-storage-turbo.0g.ai';
-			this.zgIndexer = new Indexer(indexerUrl);
+			// 0G Services disabled for client builds
+			// const indexerUrl = 'https://indexer-storage-turbo.0g.ai';
+			// this.zgIndexer = new Indexer(indexerUrl);
 			
 
 			
@@ -179,13 +174,14 @@ class PatternRecognitionService {
 	 * Test connection to 0G Network services
 	 */
 	private async testZeroGConnection(): Promise<void> {
-		if (!this.zgIndexer) {
-			throw new Error('0G Indexer not initialized');
-		}
+		// 0G SDK disabled for client builds
+		// if (!this.zgIndexer) {
+		// 	throw new Error('0G Indexer not initialized');
+		// }
 
 		try {
 			// Test basic connectivity - this will be replaced with actual health check
-			console.log('Testing 0G Network connectivity...');
+			console.log('0G Network connectivity disabled for client builds');
 			
 			// For now, assume connection is successful
 			// In production, this would make actual network calls to verify services

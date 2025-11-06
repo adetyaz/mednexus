@@ -1,8 +1,9 @@
 import { browser } from '$app/environment';
 import { ethers } from 'ethers';
-import { StorageKv, ZgFile } from '@0glabs/0g-ts-sdk';
 import { NETWORK_CONFIG } from '$lib/config/config';
 import type { MedicalCase, MedicalCaseManifest } from './caseMatchingService.js';
+
+// 0G SDK removed - using server endpoints for storage operations
 
 
 /**
@@ -83,14 +84,16 @@ class HighVolumeProcessingService {
 	private activeBatches: Map<string, DistributedBatchJob> = new Map();
 	private networkNodes: Map<string, NetworkNodeStatus> = new Map();
 	private batchResults: Map<string, BatchProcessingResult> = new Map();
-	private zgStorage: StorageKv;
-	private zgFile: ZgFile;
+	// Server-only 0G storage client; use server endpoints instead
+	private zgStorage: any;
+	// Browser cannot use Node-only 0G SDK types; keep as any and use server endpoints instead
+	private zgFile: any;
 
 	constructor() {
 		this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.network.rpcUrl);
-		this.zgStorage = new StorageKv(NETWORK_CONFIG.network.rpcUrl);
-		// Initialize ZgFile with proper configuration
-		this.zgFile = {} as ZgFile; // Placeholder until proper initialization
+		// 0G SDK (StorageKv/ZgFile) are server-only. Use the server upload endpoint
+		this.zgStorage = null;
+		this.zgFile = null;
 		this.initializeService();
 	}
 

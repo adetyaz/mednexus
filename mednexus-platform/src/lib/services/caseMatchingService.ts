@@ -9,8 +9,7 @@ import { browser } from '$app/environment';
 import { enhancedOGStorageService } from '$lib/services/ogStorage';
 import { medicalTranslationService } from '$lib/services/medicalTranslationService';
 
-// 0G SDK integration for compute and storage
-import { Indexer, ZgFile } from '@0glabs/0g-ts-sdk';
+// 0G SDK removed - using server endpoints for storage operations
 
 export interface MedicalCase {
 	id: string;

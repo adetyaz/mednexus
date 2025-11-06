@@ -170,7 +170,7 @@ Breaks down the barriers that prevent global medical collaboration. Traditionall
 ### **Key Features**
 
 - **Doctor Registration**: Medical professionals register with institutional backing and staking
-- **Staking Mechanism**: 0.0005 A0GI economic security for doctor registration
+- **Staking Mechanism**: 0.0005 0G economic security for doctor registration
 - **Cross-Border Agreements**: Automated international medical collaboration frameworks
 - **Medical Case Management**: Secure patient case sharing with granular consent controls
 

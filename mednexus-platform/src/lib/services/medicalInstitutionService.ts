@@ -322,7 +322,7 @@ export class MedicalInstitutionService {
 		const contractWithSigner = this.collaborationHubContract.connect(signer);
 
 		
-		const stakeAmount = ethers.parseEther("0.00005");
+		const stakeAmount = ethers.parseEther("0.000005");
 	
 
 		try {

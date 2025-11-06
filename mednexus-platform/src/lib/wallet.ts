@@ -86,7 +86,8 @@ if (browser) {
 		appkit = createAppKit({
 			adapters: [ethersAdapter],
 			projectId,
-			networks: [ogChain, mainnet, arbitrum, polygon],
+			networks: [ogChain],
+			defaultNetwork: ogChain,
 			metadata,
 			features: {
 				analytics: false, // Disable analytics to avoid configuration issues

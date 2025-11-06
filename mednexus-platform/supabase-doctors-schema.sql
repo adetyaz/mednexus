@@ -261,5 +261,5 @@ COMMENT ON COLUMN medical_doctors.wallet_address IS 'Doctor wallet address - mus
 COMMENT ON COLUMN medical_doctors.institution_id IS 'References medical_institutions.id';
 COMMENT ON COLUMN medical_doctors.transaction_hash IS 'Transaction hash from blockchain registration';
 COMMENT ON COLUMN medical_doctors.blockchain_registered IS 'True only after successful blockchain transaction';
-COMMENT ON COLUMN medical_doctors.stake_amount IS 'Amount staked on blockchain (0.0005 A0GI for doctors)';
+COMMENT ON COLUMN medical_doctors.stake_amount IS 'Amount staked on blockchain (0.0005 0G for doctors)';
 COMMENT ON COLUMN medical_doctors.permissions IS 'JSON object defining doctor permissions and access levels';

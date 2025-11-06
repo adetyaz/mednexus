@@ -162,7 +162,7 @@ contract MedicalCollaborationHub {
 
 #### **Doctor Credentialing System**
 
-- **0.0005 A0GI Stake**: Economic security for professional registration
+- **0.0005 0G Stake**: Economic security for professional registration
 - **Institutional Backing**: Verification through associated hospitals
 - **Specialty Validation**: Medical specialty verification and tracking
 - **License Verification**: Integration with global medical licensing authorities

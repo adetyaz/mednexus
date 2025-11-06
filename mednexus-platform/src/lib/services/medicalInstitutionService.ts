@@ -321,9 +321,9 @@ export class MedicalInstitutionService {
 		// Create contract instance with signer
 		const contractWithSigner = this.collaborationHubContract.connect(signer);
 
-		// Doctor registration requires 0.0005 A0GI stake
-		const stakeAmount = ethers.parseEther("0.0005");
-		console.log('💰 Stake amount:', ethers.formatEther(stakeAmount), 'A0GI');
+		
+		const stakeAmount = ethers.parseEther("0.00005");
+	
 
 		try {
 			// Call registerDoctor function on MedicalCollaborationHub
@@ -355,7 +355,7 @@ export class MedicalInstitutionService {
 			
 			// Parse common error messages
 			if (error.message?.includes('insufficient funds')) {
-				throw new Error(`Insufficient funds. You need at least ${ethers.formatEther(stakeAmount)} A0GI to register as a doctor.`);
+				throw new Error(`Insufficient funds. You need at least ${ethers.formatEther(stakeAmount)} 0G to register as a doctor.`);
 			} else if (error.message?.includes('NotVerifiedInstitution')) {
 				throw new Error('Institution is not verified on blockchain.');
 			} else if (error.message?.includes('Already registered')) {

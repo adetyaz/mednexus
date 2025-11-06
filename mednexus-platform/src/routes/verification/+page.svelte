@@ -309,7 +309,7 @@
 						></div>
 						<p class="text-gray-700 mb-2">Registering doctor on blockchain...</p>
 						<p class="text-gray-500 text-sm">
-							This requires 0.0005 A0GI stake and may take a few moments.
+							This requires 0.0005 0G stake and may take a few moments.
 						</p>
 					</div>
 				{:else if currentStep === 'complete'}

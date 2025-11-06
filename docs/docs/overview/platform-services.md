@@ -48,7 +48,7 @@ async registerDoctor(doctorData: DoctorRegistration): Promise<{
 }>
 ```
 
-- **Staking Mechanism**: 0.0005 A0GI stake required for doctor registration
+- **Staking Mechanism**: 0.0005 0G stake required for doctor registration
 - **Institutional Backing**: Verification through associated medical institutions
 - **Blockchain Verification**: Direct integration with MedicalCollaborationHub contract
 - **Error Handling**: Comprehensive error messages for insufficient funds, verification issues
